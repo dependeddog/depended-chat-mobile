@@ -6,7 +6,8 @@
         android:allowBackup="true"
         android:label="Depended Chat"
         android:supportsRtl="true"
-        android:theme="@style/Theme.DependedChat">
+        android:theme="@style/Theme.DependedChat"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
