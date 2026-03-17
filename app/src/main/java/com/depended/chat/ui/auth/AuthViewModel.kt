@@ -28,7 +28,8 @@ class AuthViewModel @Inject constructor(
         }.onSuccess {
             onSuccess()
         }.onFailure {
-            _state.value = _state.value.copy(error = it.message ?: "Auth error")
+            val fallback = if (_state.value.isLoginMode) "Login failed" else "Registration failed"
+            _state.value = _state.value.copy(error = it.message ?: fallback)
         }
         _state.value = _state.value.copy(loading = false)
     }

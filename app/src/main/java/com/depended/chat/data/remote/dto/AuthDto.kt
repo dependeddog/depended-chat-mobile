@@ -7,6 +7,12 @@ import kotlinx.serialization.Serializable
 data class AuthRequestDto(val username: String, val password: String)
 
 @Serializable
+data class UserReadDto(
+    val id: String,
+    val username: String
+)
+
+@Serializable
 data class AuthResponseDto(
     @SerialName("access_token") val accessToken: String,
     @SerialName("access_expires_in") val accessExpiresIn: Long,

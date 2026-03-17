@@ -17,8 +17,13 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun register(username: String, password: String) {
-        val response = api.register(AuthRequestDto(username, password))
-        sessionManager.saveSession(response.accessToken, response.refreshToken, response.accessExpiresIn)
+        api.register(AuthRequestDto(username, password))
+
+        runCatching {
+            login(username, password)
+        }.getOrElse { cause ->
+            throw IllegalStateException("Registration succeeded, but automatic login failed", cause)
+        }
     }
 
     override suspend fun logout() {
