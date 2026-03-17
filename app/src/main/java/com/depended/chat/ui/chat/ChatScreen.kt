@@ -1,12 +1,11 @@
 package com.depended.chat.ui.chat
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,6 +19,7 @@ import com.depended.chat.domain.model.MessageStatus
 import com.depended.chat.ui.theme.BubbleMine
 import com.depended.chat.ui.theme.BubbleOther
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit) {
     val state by viewModel.state.collectAsState()
@@ -28,7 +28,7 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit) {
     Scaffold(topBar = {
         TopAppBar(
             title = { Text(state.companionName.ifBlank { "Chat" }) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } }
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } }
         )
     }, bottomBar = {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -38,7 +38,7 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit) {
                 modifier = Modifier.weight(1f),
                 placeholder = { Text("Сообщение") }
             )
-            IconButton(onClick = viewModel::send) { Icon(Icons.Default.Send, null) }
+            IconButton(onClick = viewModel::send) { Icon(Icons.AutoMirrored.Filled.Send, null) }
         }
     }) { pad ->
         if (state.messages.isEmpty() && !state.loading) {

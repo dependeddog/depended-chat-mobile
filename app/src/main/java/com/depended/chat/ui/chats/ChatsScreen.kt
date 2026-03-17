@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatsScreen(viewModel: ChatsViewModel, onOpenChat: (String) -> Unit, onLoggedOut: () -> Unit) {
     val state by viewModel.state.collectAsState()

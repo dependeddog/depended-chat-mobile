@@ -7,9 +7,9 @@ import com.depended.chat.data.websocket.WebSocketManager
 import com.depended.chat.domain.model.*
 import com.depended.chat.domain.repository.ChatsRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
 import javax.inject.Inject
 
 class ChatsRepositoryImpl @Inject constructor(

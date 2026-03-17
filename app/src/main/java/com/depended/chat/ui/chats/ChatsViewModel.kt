@@ -29,7 +29,11 @@ class ChatsViewModel @Inject constructor(
                 _state.update { it.copy(loading = false, items = items) }
                 observeGlobalEvents()
             }
-            .onFailure { _state.update { it.copy(loading = false, error = it.message) } }
+            .onFailure { error ->
+                _state.update { state ->
+                    state.copy(loading = false, error = error.message)
+                }
+            }
     }
 
     private fun observeGlobalEvents() = viewModelScope.launch {

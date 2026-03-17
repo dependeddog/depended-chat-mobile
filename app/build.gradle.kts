@@ -19,8 +19,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
-        buildConfigField("String", "BASE_URL", "http://localhost:8000/")
-        buildConfigField("String", "WS_BASE_URL", "ws://localhhost:8000")
+        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8000/\"")
+        buildConfigField("String", "WS_BASE_URL", "\"ws://10.0.2.2:8000/\"")
     }
 
     buildTypes {
@@ -73,6 +73,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     implementation("com.google.dagger:hilt-android:2.52")
+    implementation("com.google.android.material:material:1.12.0")
     ksp("com.google.dagger:hilt-compiler:2.52")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
