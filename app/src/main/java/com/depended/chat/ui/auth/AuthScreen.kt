@@ -1,7 +1,18 @@
 package com.depended.chat.ui.auth
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,6 +41,15 @@ fun AuthScreen(viewModel: AuthViewModel, onSuccess: () -> Unit) {
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
+            if (!state.isLoginMode) {
+                OutlinedTextField(
+                    value = state.confirmPassword,
+                    onValueChange = viewModel::onConfirmPassword,
+                    label = { Text("Confirm password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Button(onClick = { viewModel.submit(onSuccess) }, enabled = !state.loading, modifier = Modifier.fillMaxWidth()) {
                 if (state.loading) CircularProgressIndicator(modifier = Modifier.size(18.dp))

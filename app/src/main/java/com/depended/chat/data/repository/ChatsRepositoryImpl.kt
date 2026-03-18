@@ -19,6 +19,12 @@ class ChatsRepositoryImpl @Inject constructor(
 ) : ChatsRepository {
     override suspend fun getChats(): List<ChatItem> = api.getChats().map { it.toDomain() }
 
+
+    override suspend fun createDirectChat(userId: String): String {
+        val response = api.createDirect(com.depended.chat.data.remote.dto.CreateDirectChatRequestDto(userId))
+        return response.chatId
+    }
+
     override suspend fun getChatDetails(chatId: String): ChatDetails {
         val dto = api.getChat(chatId)
         return ChatDetails(dto.chatId, ChatUser(dto.companion.id, dto.companion.username), dto.unreadCount)

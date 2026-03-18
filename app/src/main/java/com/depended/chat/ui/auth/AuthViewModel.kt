@@ -18,17 +18,41 @@ class AuthViewModel @Inject constructor(
 
     fun onUsername(v: String) { _state.value = _state.value.copy(username = v) }
     fun onPassword(v: String) { _state.value = _state.value.copy(password = v) }
-    fun toggleMode() { _state.value = _state.value.copy(isLoginMode = !_state.value.isLoginMode, error = null) }
+    fun onConfirmPassword(v: String) { _state.value = _state.value.copy(confirmPassword = v) }
+
+    fun toggleMode() {
+        _state.value = _state.value.copy(
+            isLoginMode = !_state.value.isLoginMode,
+            error = null,
+            confirmPassword = ""
+        )
+    }
 
     fun submit(onSuccess: () -> Unit) = viewModelScope.launch {
-        _state.value = _state.value.copy(loading = true, error = null)
+        val current = _state.value
+        if (current.username.isBlank() || current.password.isBlank()) {
+            _state.value = current.copy(error = "Заполните username и password")
+            return@launch
+        }
+        if (!current.isLoginMode) {
+            if (current.confirmPassword.isBlank()) {
+                _state.value = current.copy(error = "Подтвердите пароль")
+                return@launch
+            }
+            if (current.password != current.confirmPassword) {
+                _state.value = current.copy(error = "Пароли не совпадают")
+                return@launch
+            }
+        }
+
+        _state.value = current.copy(loading = true, error = null)
         runCatching {
-            if (_state.value.isLoginMode) authRepository.login(_state.value.username, _state.value.password)
-            else authRepository.register(_state.value.username, _state.value.password)
+            if (current.isLoginMode) authRepository.login(current.username, current.password)
+            else authRepository.register(current.username, current.password)
         }.onSuccess {
             onSuccess()
         }.onFailure {
-            val fallback = if (_state.value.isLoginMode) "Login failed" else "Registration failed"
+            val fallback = if (current.isLoginMode) "Login failed" else "Registration failed"
             _state.value = _state.value.copy(error = it.message ?: fallback)
         }
         _state.value = _state.value.copy(loading = false)
@@ -38,6 +62,7 @@ class AuthViewModel @Inject constructor(
 data class AuthUiState(
     val username: String = "",
     val password: String = "",
+    val confirmPassword: String = "",
     val isLoginMode: Boolean = true,
     val loading: Boolean = false,
     val error: String? = null

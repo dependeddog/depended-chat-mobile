@@ -14,6 +14,7 @@ interface AuthRepository {
 
 interface ChatsRepository {
     suspend fun getChats(): List<ChatItem>
+    suspend fun createDirectChat(userId: String): String
     suspend fun getChatDetails(chatId: String): ChatDetails
     suspend fun getMessages(chatId: String): List<Message>
     suspend fun sendMessage(chatId: String, text: String): Message
