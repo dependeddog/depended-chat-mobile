@@ -10,6 +10,6 @@ data class WebSocketEventDto(val event: String, val data: JsonObject)
 @Serializable
 data class ChatReadEventDto(
     @SerialName("chat_id") val chatId: String,
-    @SerialName("user_id") val userId: String,
+    @SerialName("user_id") val userId: String? = null,
     @SerialName("read_up_to_message_id") val readUpToMessageId: String? = null
 )

@@ -12,7 +12,9 @@ data class MessageDto(
     @SerialName("chat_id") val chatId: String,
     @SerialName("sender_id") val senderId: String,
     val text: String,
-    @SerialName("created_at") val createdAt: String
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("is_own") val isOwn: Boolean,
+    @SerialName("read_by_companion") val readByCompanion: Boolean
 )
 
 @Serializable
@@ -42,10 +44,13 @@ data class ChatMessagesResponseDto(val items: List<MessageDto>, val limit: Int, 
 data class MessageCreateRequestDto(val text: String)
 
 @Serializable
-data class CreateDirectChatRequestDto(@SerialName("user_id") val userId: String)
+data class CreateDirectChatRequestDto(val username: String)
 
 @Serializable
-data class MarkReadResponseDto(val status: String)
+data class MarkReadResponseDto(
+    val status: String,
+    @SerialName("read_up_to_message_id") val readUpToMessageId: String? = null
+)
 
 @Serializable
 data class DirectChatResponseDto(

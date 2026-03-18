@@ -4,9 +4,13 @@ import com.depended.chat.data.remote.dto.AuthRequestDto
 import com.depended.chat.data.remote.dto.AuthResponseDto
 import com.depended.chat.data.remote.dto.UserReadDto
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface AuthApi {
+    @GET("auth/whoami")
+    suspend fun whoami(): UserReadDto
+
     @POST("auth/register")
     suspend fun register(@Body body: AuthRequestDto): UserReadDto
 

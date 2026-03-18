@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material3.AlertDialog
@@ -25,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -32,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -43,15 +46,19 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatsScreen(viewModel: ChatsViewModel, onOpenChat: (String) -> Unit, onLoggedOut: () -> Unit) {
+fun ChatsScreen(viewModel: ChatsViewModel, onOpenChat: (String) -> Unit, onOpenAccount: () -> Unit) {
     val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCurrentUser()
+    }
 
     if (state.showCreateDialog) {
         CreateChatDialog(
-            userId = state.newChatUserId,
+            username = state.newChatUsername,
             createError = state.createError,
             creating = state.creatingChat,
-            onUserIdChanged = viewModel::onNewChatUserIdChanged,
+            onUsernameChanged = viewModel::onNewChatUsernameChanged,
             onDismiss = { viewModel.onCreateDialogChanged(false) },
             onCreate = { viewModel.createDirectChat(onOpenChat) }
         )
@@ -61,7 +68,23 @@ fun ChatsScreen(viewModel: ChatsViewModel, onOpenChat: (String) -> Unit, onLogge
         topBar = {
             TopAppBar(
                 title = { Text("Chats") },
-                actions = { TextButton(onClick = { viewModel.logout(onLoggedOut) }) { Text("Выйти") } }
+                navigationIcon = {
+                    IconButton(onClick = onOpenAccount) {
+                        if (state.currentUser != null) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(state.currentUser!!.username.take(1).uppercase())
+                            }
+                        } else {
+                            Icon(Icons.Default.AccountCircle, contentDescription = "Аккаунт")
+                        }
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -75,12 +98,15 @@ fun ChatsScreen(viewModel: ChatsViewModel, onOpenChat: (String) -> Unit, onLogge
                 state.loading && state.items.isEmpty() -> {
                     SkeletonChatsList()
                 }
+
                 state.error != null && state.items.isEmpty() -> {
                     ErrorState(state.error!!, onRetry = viewModel::loadChats)
                 }
+
                 state.isEmpty -> {
                     EmptyChatsState(onCreateChat = { viewModel.onCreateDialogChanged(true) })
                 }
+
                 else -> {
                     LazyColumn {
                         items(state.items, key = { it.id }) { item ->
@@ -152,13 +178,12 @@ private fun SkeletonChatsList() {
                     Box(
                         Modifier
                             .height(14.dp)
-                            .fillMaxWidth(0.8f)
+                            .fillMaxWidth(0.7f)
                             .clip(RectangleShape)
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     )
                 }
             }
-            HorizontalDivider()
         }
     }
 }
@@ -198,10 +223,10 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
 
 @Composable
 private fun CreateChatDialog(
-    userId: String,
+    username: String,
     createError: String?,
     creating: Boolean,
-    onUserIdChanged: (String) -> Unit,
+    onUsernameChanged: (String) -> Unit,
     onDismiss: () -> Unit,
     onCreate: () -> Unit
 ) {
@@ -211,9 +236,9 @@ private fun CreateChatDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = userId,
-                    onValueChange = onUserIdChanged,
-                    label = { Text("user_id (UUID)") },
+                    value = username,
+                    onValueChange = onUsernameChanged,
+                    label = { Text("username") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
