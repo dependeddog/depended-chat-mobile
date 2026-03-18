@@ -63,7 +63,9 @@ class AuthRepositoryImpl @Inject constructor(
     override fun observeCurrentUser(): Flow<CurrentUser?> = currentUserFlow
 
     private suspend fun fetchAndCacheCurrentUser(): CurrentUser {
-        val dto = api.whoami()
+        val token = sessionManager.getSession().accessToken
+        check(token.isNotBlank()) { "Not authorized" }
+        val dto = api.whoami("Bearer $token")
         return CurrentUser(id = dto.id, username = dto.username).also { currentUserFlow.value = it }
     }
 }
