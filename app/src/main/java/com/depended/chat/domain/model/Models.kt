@@ -2,7 +2,7 @@ package com.depended.chat.domain.model
 
 data class ChatUser(val id: String, val username: String)
 
-enum class MessageStatus { SENT, DELIVERED, READ }
+enum class MessageStatus { SENT, READ }
 
 data class Message(
     val id: String,
@@ -10,8 +10,8 @@ data class Message(
     val senderId: String,
     val text: String,
     val createdAt: String,
-    val isMine: Boolean = false,
-    val status: MessageStatus = MessageStatus.DELIVERED
+    val isMine: Boolean,
+    val status: MessageStatus
 )
 
 data class ChatItem(
@@ -26,4 +26,9 @@ data class ChatDetails(
     val chatId: String,
     val companion: ChatUser,
     val unreadCount: Int
+)
+
+data class CurrentUser(
+    val id: String,
+    val username: String
 )

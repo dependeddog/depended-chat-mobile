@@ -2,10 +2,18 @@ package com.depended.chat.data.repository
 
 import com.depended.chat.data.remote.api.ChatsApi
 import com.depended.chat.data.remote.dto.ChatListItemDto
+import com.depended.chat.data.remote.dto.ChatReadEventDto
+import com.depended.chat.data.remote.dto.CreateDirectChatRequestDto
+import com.depended.chat.data.remote.dto.MessageCreateRequestDto
 import com.depended.chat.data.remote.dto.MessageDto
 import com.depended.chat.data.websocket.WebSocketManager
-import com.depended.chat.domain.model.*
+import com.depended.chat.domain.model.ChatDetails
+import com.depended.chat.domain.model.ChatItem
+import com.depended.chat.domain.model.ChatUser
+import com.depended.chat.domain.model.Message
+import com.depended.chat.domain.model.MessageStatus
 import com.depended.chat.domain.repository.ChatsRepository
+import com.depended.chat.domain.repository.MessageEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.Json
@@ -19,9 +27,8 @@ class ChatsRepositoryImpl @Inject constructor(
 ) : ChatsRepository {
     override suspend fun getChats(): List<ChatItem> = api.getChats().map { it.toDomain() }
 
-
-    override suspend fun createDirectChat(userId: String): String {
-        val response = api.createDirect(com.depended.chat.data.remote.dto.CreateDirectChatRequestDto(userId))
+    override suspend fun createDirectChat(username: String): String {
+        val response = api.createDirect(CreateDirectChatRequestDto(username))
         return response.chatId
     }
 
@@ -33,7 +40,7 @@ class ChatsRepositoryImpl @Inject constructor(
     override suspend fun getMessages(chatId: String): List<Message> = api.getMessages(chatId).items.map { it.toDomain() }
 
     override suspend fun sendMessage(chatId: String, text: String): Message =
-        api.sendMessage(chatId, com.depended.chat.data.remote.dto.MessageCreateRequestDto(text)).toDomain(status = MessageStatus.SENT)
+        api.sendMessage(chatId, MessageCreateRequestDto(text)).toDomain()
 
     override suspend fun markRead(chatId: String) {
         api.markRead(chatId)
@@ -47,9 +54,10 @@ class ChatsRepositoryImpl @Inject constructor(
         ChatItem(chatId, ChatUser("", "Unknown"), lastMessage, unread, lastMessage?.createdAt.orEmpty())
     }
 
-    override fun chatEvents(chatId: String): Flow<Message> = wsManager.connectChat(chatId).mapNotNull { ev ->
+    override fun chatEvents(chatId: String): Flow<MessageEvent> = wsManager.connectChat(chatId).mapNotNull { ev ->
         when (ev.event) {
-            "message.created" -> json.decodeFromJsonElement<MessageDto>(ev.data).toDomain(status = MessageStatus.DELIVERED)
+            "message.created" -> MessageEvent.Created(json.decodeFromJsonElement<MessageDto>(ev.data).toDomain())
+            "chat.read" -> MessageEvent.ReadUpTo(json.decodeFromJsonElement<ChatReadEventDto>(ev.data).readUpToMessageId)
             else -> null
         }
     }
@@ -69,12 +77,13 @@ class ChatsRepositoryImpl @Inject constructor(
         updatedAt = updatedAt
     )
 
-    private fun MessageDto.toDomain(status: MessageStatus = MessageStatus.DELIVERED) = Message(
+    private fun MessageDto.toDomain() = Message(
         id = id,
         chatId = chatId,
         senderId = senderId,
         text = text,
         createdAt = createdAt,
-        status = status
+        isMine = isOwn,
+        status = if (isOwn && readByCompanion) MessageStatus.READ else MessageStatus.SENT
     )
 }

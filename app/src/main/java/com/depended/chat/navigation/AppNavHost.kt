@@ -7,6 +7,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.depended.chat.ui.account.AccountScreen
+import com.depended.chat.ui.account.AccountViewModel
 import com.depended.chat.ui.auth.AuthScreen
 import com.depended.chat.ui.auth.AuthViewModel
 import com.depended.chat.ui.chat.ChatScreen
@@ -41,6 +43,14 @@ fun AppNavHost() {
             ChatsScreen(
                 vm,
                 onOpenChat = { navController.navigate(Route.Chat.create(it)) },
+                onOpenAccount = { navController.navigate(Route.Account.path) }
+            )
+        }
+        composable(Route.Account.path) {
+            val vm = hiltViewModel<AccountViewModel>()
+            AccountScreen(
+                vm,
+                onBack = { navController.popBackStack() },
                 onLoggedOut = {
                     navController.navigate(Route.Auth.path) {
                         popUpTo(Route.Chats.path) { inclusive = true }

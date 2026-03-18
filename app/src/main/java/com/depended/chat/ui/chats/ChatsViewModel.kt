@@ -3,6 +3,7 @@ package com.depended.chat.ui.chats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.depended.chat.domain.model.ChatItem
+import com.depended.chat.domain.model.CurrentUser
 import com.depended.chat.domain.repository.AuthRepository
 import com.depended.chat.domain.repository.ChatsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,7 +24,21 @@ class ChatsViewModel @Inject constructor(
 
     private var globalEventsJob: Job? = null
 
-    init { loadChats() }
+    init {
+        observeCurrentUser()
+        loadChats()
+    }
+
+    private fun observeCurrentUser() = viewModelScope.launch {
+        authRepository.observeCurrentUser().collect { user ->
+            _state.update { it.copy(currentUser = user) }
+        }
+    }
+
+    fun loadCurrentUser() = viewModelScope.launch {
+        runCatching { authRepository.getCurrentUser(forceRefresh = true) }
+            .onFailure { _state.update { s -> s.copy(error = it.message ?: "Не удалось загрузить пользователя") } }
+    }
 
     fun loadChats() = viewModelScope.launch {
         _state.update { it.copy(loading = true, error = null) }
@@ -45,7 +59,9 @@ class ChatsViewModel @Inject constructor(
         globalEventsJob = viewModelScope.launch {
             chatsRepository.globalEvents().collect { updated ->
                 _state.update { current ->
-                    current.copy(items = current.items.map { if (it.id == updated.id) it.copy(unreadCount = updated.unreadCount, lastMessage = updated.lastMessage) else it })
+                    current.copy(items = current.items.map {
+                        if (it.id == updated.id) it.copy(unreadCount = updated.unreadCount, lastMessage = updated.lastMessage) else it
+                    })
                 }
             }
         }
@@ -55,38 +71,33 @@ class ChatsViewModel @Inject constructor(
         _state.update { it.copy(showCreateDialog = show, createError = null) }
     }
 
-    fun onNewChatUserIdChanged(value: String) {
-        _state.update { it.copy(newChatUserId = value, createError = null) }
+    fun onNewChatUsernameChanged(value: String) {
+        _state.update { it.copy(newChatUsername = value, createError = null) }
     }
 
     fun createDirectChat(onOpenChat: (String) -> Unit) = viewModelScope.launch {
-        val userId = state.value.newChatUserId.trim()
-        if (userId.isBlank()) {
-            _state.update { it.copy(createError = "Введите user_id") }
-            return@launch
-        }
-        val isUuid = runCatching { UUID.fromString(userId) }.isSuccess
-        if (!isUuid) {
-            _state.update { it.copy(createError = "user_id должен быть валидным UUID") }
+        val username = state.value.newChatUsername.trim()
+        if (username.isBlank()) {
+            _state.update { it.copy(createError = "Введите username") }
             return@launch
         }
 
         _state.update { it.copy(creatingChat = true, createError = null) }
-        runCatching { chatsRepository.createDirectChat(userId) }
+        runCatching { chatsRepository.createDirectChat(username) }
             .onSuccess { chatId ->
-                _state.update { it.copy(creatingChat = false, showCreateDialog = false, newChatUserId = "") }
+                _state.update { it.copy(creatingChat = false, showCreateDialog = false, newChatUsername = "") }
                 loadChats()
                 onOpenChat(chatId)
             }
             .onFailure { error ->
-                _state.update { it.copy(creatingChat = false, createError = error.message ?: "Не удалось создать чат") }
+                val msg = error.message.orEmpty()
+                val mapped = when {
+                    msg.contains("not found", ignoreCase = true) -> "Пользователь не найден"
+                    msg.contains("self", ignoreCase = true) -> "Нельзя создать чат с самим собой"
+                    else -> if (msg.isBlank()) "Не удалось создать чат" else msg
+                }
+                _state.update { it.copy(creatingChat = false, createError = mapped) }
             }
-    }
-
-    fun logout(onDone: () -> Unit) = viewModelScope.launch {
-        chatsRepository.disconnectAllSockets()
-        authRepository.logout()
-        onDone()
     }
 }
 
@@ -95,8 +106,9 @@ data class ChatsUiState(
     val items: List<ChatItem> = emptyList(),
     val isEmpty: Boolean = false,
     val error: String? = null,
+    val currentUser: CurrentUser? = null,
     val showCreateDialog: Boolean = false,
-    val newChatUserId: String = "",
+    val newChatUsername: String = "",
     val creatingChat: Boolean = false,
     val createError: String? = null
 )
