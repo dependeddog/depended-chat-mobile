@@ -55,11 +55,21 @@ class ChatsRepositoryImpl @Inject constructor(
     }
 
     override fun chatEvents(chatId: String): Flow<MessageEvent> = wsManager.connectChat(chatId).mapNotNull { ev ->
-        when (ev.event) {
-            "message.created" -> MessageEvent.Created(json.decodeFromJsonElement<MessageDto>(ev.data).toDomain())
-            "chat.read" -> MessageEvent.ReadUpTo(json.decodeFromJsonElement<ChatReadEventDto>(ev.data).readUpToMessageId)
-            else -> null
-        }
+        runCatching {
+            when (ev.event) {
+                "message.created" -> {
+                    val payload = ev.data["message"] ?: ev.data
+                    MessageEvent.Created(json.decodeFromJsonElement<MessageDto>(payload).toDomain())
+                }
+
+                "chat.read" -> {
+                    val payload = ev.data["read"] ?: ev.data
+                    MessageEvent.ReadUpTo(json.decodeFromJsonElement<ChatReadEventDto>(payload).readUpToMessageId)
+                }
+
+                else -> null
+            }
+        }.getOrNull()
     }
 
     override suspend fun connectGlobal() = Unit

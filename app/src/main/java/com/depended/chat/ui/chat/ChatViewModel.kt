@@ -7,10 +7,12 @@ import com.depended.chat.domain.model.MessageStatus
 import com.depended.chat.domain.repository.ChatsRepository
 import com.depended.chat.domain.repository.MessageEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,8 +22,15 @@ class ChatViewModel @Inject constructor(
     private val _state = MutableStateFlow(ChatUiState())
     val state: StateFlow<ChatUiState> = _state
 
+    private var chatEventsJob: Job? = null
+
     fun init(chatId: String) {
         if (_state.value.chatId == chatId) return
+        val previousChatId = _state.value.chatId
+        chatEventsJob?.cancel()
+        if (previousChatId.isNotBlank()) {
+            viewModelScope.launch { chatsRepository.disconnectChat(previousChatId) }
+        }
         _state.update { it.copy(chatId = chatId) }
         viewModelScope.launch {
             _state.update { it.copy(loading = true) }
@@ -46,32 +55,35 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private fun observeSocket(chatId: String) = viewModelScope.launch {
-        chatsRepository.chatEvents(chatId).collect { event ->
-            _state.update { current ->
-                when (event) {
-                    is MessageEvent.Created -> {
-                        val incoming = event.message
-                        val existing = current.messages.indexOfFirst { it.id == incoming.id }
-                        if (existing >= 0) {
-                            val updated = current.messages.toMutableList()
-                            updated[existing] = incoming
+    private fun observeSocket(chatId: String) {
+        chatEventsJob?.cancel()
+        chatEventsJob = viewModelScope.launch {
+            chatsRepository.chatEvents(chatId).collect { event ->
+                _state.update { current ->
+                    when (event) {
+                        is MessageEvent.Created -> {
+                            val incoming = event.message
+                            val existing = current.messages.indexOfFirst { it.id == incoming.id }
+                            if (existing >= 0) {
+                                val updated = current.messages.toMutableList()
+                                updated[existing] = incoming
+                                current.copy(messages = updated)
+                            } else {
+                                current.copy(messages = current.messages + incoming)
+                            }
+                        }
+
+                        is MessageEvent.ReadUpTo -> {
+                            val readUpToId = event.readUpToMessageId
+                            if (readUpToId.isNullOrBlank()) return@update current
+                            val index = current.messages.indexOfFirst { it.id == readUpToId }
+                            if (index < 0) return@update current
+
+                            val updated = current.messages.mapIndexed { i, msg ->
+                                if (msg.isMine && i <= index) msg.copy(status = MessageStatus.READ) else msg
+                            }
                             current.copy(messages = updated)
-                        } else {
-                            current.copy(messages = current.messages + incoming)
                         }
-                    }
-
-                    is MessageEvent.ReadUpTo -> {
-                        val readUpToId = event.readUpToMessageId
-                        if (readUpToId.isNullOrBlank()) return@update current
-                        val index = current.messages.indexOfFirst { it.id == readUpToId }
-                        if (index < 0) return@update current
-
-                        val updated = current.messages.mapIndexed { i, msg ->
-                            if (msg.isMine && i <= index) msg.copy(status = MessageStatus.READ) else msg
-                        }
-                        current.copy(messages = updated)
                     }
                 }
             }
@@ -100,10 +112,11 @@ class ChatViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch {
-            _state.value.chatId.takeIf { it.isNotBlank() }?.let { chatsRepository.disconnectChat(it) }
+        chatEventsJob?.cancel()
+        _state.value.chatId.takeIf { it.isNotBlank() }?.let { chatId ->
+            runBlocking { chatsRepository.disconnectChat(chatId) }
         }
+        super.onCleared()
     }
 }
 
