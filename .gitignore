@@ -27,3 +27,6 @@ replay_pid*
 .kotlin/
 
 app/build/
+/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+.gradle
+build/
