@@ -36,11 +36,13 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(loading = true) }
             runCatching {
+                val currentUserId = chatsRepository.getCurrentUserId()
                 val details = chatsRepository.getChatDetails(chatId)
                 val messages = chatsRepository.getMessages(chatId)
                 chatsRepository.markRead(chatId)
-                details to messages
-            }.onSuccess { (details, messages) ->
+
+                Triple(currentUserId, details, messages)
+            }.onSuccess { (currentUserId, details, messages) ->
                 _state.update {
                     it.copy(
                         loading = false,
@@ -49,20 +51,20 @@ class ChatViewModel @Inject constructor(
                         error = null
                     )
                 }
-                observeSocket(chatId)
+                observeSocket(chatId, currentUserId)
             }.onFailure { err ->
                 _state.update { it.copy(loading = false, error = err.message ?: "Не удалось открыть чат") }
             }
         }
     }
 
-    private fun observeSocket(chatId: String) {
+    private fun observeSocket(chatId: String, currentUserId: String) {
         chatEventsJob?.cancel()
 
-        Log.d("WS_CHAT_VM", "[observeSocket.start] chatId=$chatId")
+        Log.d("WS_CHAT_VM", "[observeSocket.start] chatId=$chatId currentUserId=$currentUserId")
 
         chatEventsJob = viewModelScope.launch {
-            chatsRepository.chatEvents(chatId).collect { event ->
+            chatsRepository.chatEvents(chatId, currentUserId).collect { event ->
                 Log.d("WS_CHAT_VM", "[collect] chatId=$chatId event=$event")
 
                 _state.update { current ->
@@ -153,6 +155,7 @@ class ChatViewModel @Inject constructor(
 
 data class ChatUiState(
     val chatId: String = "",
+    val currentUserId: String = "",
     val companionName: String = "",
     val input: String = "",
     val loading: Boolean = false,

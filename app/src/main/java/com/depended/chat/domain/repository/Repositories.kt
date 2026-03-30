@@ -23,11 +23,13 @@ interface ChatsRepository {
     suspend fun sendMessage(chatId: String, text: String): Message
     suspend fun markRead(chatId: String)
     fun globalEvents(currentUserId: String): Flow<ChatItem>
-    fun chatEvents(chatId: String): Flow<MessageEvent>
+    fun chatEvents(chatId: String, currentUserId: String): Flow<MessageEvent>
     suspend fun connectGlobal()
     suspend fun connectChat(chatId: String)
     suspend fun disconnectChat(chatId: String)
     suspend fun disconnectAllSockets()
+
+    suspend fun getCurrentUserId(): String
 }
 
 sealed class MessageEvent {

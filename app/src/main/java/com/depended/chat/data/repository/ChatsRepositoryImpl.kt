@@ -14,18 +14,21 @@ import com.depended.chat.domain.model.ChatItem
 import com.depended.chat.domain.model.ChatUser
 import com.depended.chat.domain.model.Message
 import com.depended.chat.domain.model.MessageStatus
+import com.depended.chat.domain.repository.AuthRepository
 import com.depended.chat.domain.repository.ChatsRepository
 import com.depended.chat.domain.repository.MessageEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.JsonNull
 import javax.inject.Inject
 
 class ChatsRepositoryImpl @Inject constructor(
     private val api: ChatsApi,
     private val wsManager: WebSocketManager,
-    private val json: Json
+    private val json: Json,
+    private val authRepository: AuthRepository
 ) : ChatsRepository {
     override suspend fun getChats(): List<ChatItem> = api.getChats().map { it.toDomain() }
 
@@ -53,14 +56,18 @@ class ChatsRepositoryImpl @Inject constructor(
 
         val chatId = ev.data["id"]?.toString()?.trim('"') ?: return@mapNotNull null
         val unread = ev.data["unread_count"]?.toString()?.toIntOrNull() ?: 0
-        val lastMessage = ev.data["last_message"]?.let {
-            json.decodeFromJsonElement<WsMessageCreatedDto>(it).toDomain(currentUserId)
+        val lastMessageElement = ev.data["last_message"]
+        val lastMessage = if (lastMessageElement == null || lastMessageElement is JsonNull) {
+            null
+        } else {
+            json.decodeFromJsonElement<WsMessageCreatedDto>(lastMessageElement)
+                .toDomain(currentUserId)
         }
 
         ChatItem(chatId, ChatUser("", "Unknown"), lastMessage, unread, lastMessage?.createdAt.orEmpty())
     }
 
-    override fun chatEvents(chatId: String): Flow<MessageEvent> = wsManager.connectChat(chatId).mapNotNull { ev ->
+    override fun chatEvents(chatId: String, currentUserId: String): Flow<MessageEvent> = wsManager.connectChat(chatId).mapNotNull { ev ->
         Log.d("WS_CHAT_REPO", "[chatEvents] chatId=$chatId event=${ev.event} data=${ev.data}")
 
         runCatching {
@@ -75,7 +82,7 @@ class ChatsRepositoryImpl @Inject constructor(
                         "[message.created.parsed] chatId=$chatId id=${dto.id} senderId=${dto.senderId} text=${dto.text}"
                     )
 
-                    MessageEvent.Created(dto.toDomain(currentUserId = "TODO_CURRENT_USER_ID"))
+                    MessageEvent.Created(dto.toDomain(currentUserId))
                 }
 
                 "chat.read" -> {
@@ -107,6 +114,10 @@ class ChatsRepositoryImpl @Inject constructor(
     override suspend fun disconnectChat(chatId: String) = wsManager.disconnectChat(chatId)
 
     override suspend fun disconnectAllSockets() = wsManager.disconnectAll()
+
+    override suspend fun getCurrentUserId(): String {
+        return authRepository.getCurrentUser(forceRefresh = false).id
+    }
 
     private fun ChatListItemDto.toDomain() = ChatItem(
         id = id,
