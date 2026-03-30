@@ -69,17 +69,28 @@ class ChatsViewModel @Inject constructor(
         globalEventsJob = viewModelScope.launch {
             chatsRepository.globalEvents(currentUserId).collect { updated ->
                 _state.update { current ->
-                    current.copy(
-                        items = current.items.map {
-                            if (it.id == updated.id) {
-                                it.copy(
+                    val existingIndex = current.items.indexOfFirst { it.id == updated.id }
+
+                    val newItems = if (existingIndex >= 0) {
+                        current.items.map { item ->
+                            if (item.id == updated.id) {
+                                item.copy(
+                                    companion = if (updated.companion.username.isNotBlank()) updated.companion else item.companion,
                                     unreadCount = updated.unreadCount,
-                                    lastMessage = updated.lastMessage
+                                    lastMessage = updated.lastMessage,
+                                    updatedAt = updated.updatedAt
                                 )
                             } else {
-                                it
+                                item
                             }
                         }
+                    } else {
+                        listOf(updated) + current.items
+                    }.sortedByDescending { it.updatedAt }
+
+                    current.copy(
+                        items = newItems,
+                        isEmpty = newItems.isEmpty()
                     )
                 }
             }

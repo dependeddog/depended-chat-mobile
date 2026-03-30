@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.jsonObject
 import javax.inject.Inject
 
 class ChatsRepositoryImpl @Inject constructor(
@@ -51,21 +52,37 @@ class ChatsRepositoryImpl @Inject constructor(
         api.markRead(chatId)
     }
 
-    override fun globalEvents(currentUserId: String): Flow<ChatItem> = wsManager.connectGlobal().mapNotNull { ev ->
-        if (ev.event != "chat.list.updated") return@mapNotNull null
+    override fun globalEvents(currentUserId: String): Flow<ChatItem> =
+        wsManager.connectGlobal().mapNotNull { ev ->
+            if (ev.event != "chat.list.updated") return@mapNotNull null
 
-        val chatId = ev.data["id"]?.toString()?.trim('"') ?: return@mapNotNull null
-        val unread = ev.data["unread_count"]?.toString()?.toIntOrNull() ?: 0
-        val lastMessageElement = ev.data["last_message"]
-        val lastMessage = if (lastMessageElement == null || lastMessageElement is JsonNull) {
-            null
-        } else {
-            json.decodeFromJsonElement<WsMessageCreatedDto>(lastMessageElement)
-                .toDomain(currentUserId)
+            val chatId = ev.data["id"]?.toString()?.trim('"') ?: return@mapNotNull null
+            val unread = ev.data["unread_count"]?.toString()?.toIntOrNull() ?: 0
+
+            val companionElement = ev.data["companion"] ?: return@mapNotNull null
+            val companionId = companionElement.jsonObject["id"]?.toString()?.trim('"').orEmpty()
+            val companionUsername = companionElement.jsonObject["username"]?.toString()?.trim('"').orEmpty()
+
+            val lastMessageElement = ev.data["last_message"]
+            val lastMessage = if (lastMessageElement == null || lastMessageElement is JsonNull) {
+                null
+            } else {
+                json.decodeFromJsonElement<WsMessageCreatedDto>(lastMessageElement)
+                    .toDomain(currentUserId)
+            }
+
+            val updatedAt = ev.data["updated_at"]?.toString()?.trim('"')
+                ?: lastMessage?.createdAt
+                ?: ""
+
+            ChatItem(
+                id = chatId,
+                companion = ChatUser(companionId, companionUsername),
+                lastMessage = lastMessage,
+                unreadCount = unread,
+                updatedAt = updatedAt
+            )
         }
-
-        ChatItem(chatId, ChatUser("", "Unknown"), lastMessage, unread, lastMessage?.createdAt.orEmpty())
-    }
 
     override fun chatEvents(chatId: String, currentUserId: String): Flow<MessageEvent> = wsManager.connectChat(chatId).mapNotNull { ev ->
         Log.d("WS_CHAT_REPO", "[chatEvents] chatId=$chatId event=${ev.event} data=${ev.data}")
