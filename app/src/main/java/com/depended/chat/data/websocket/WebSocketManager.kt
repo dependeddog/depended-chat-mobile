@@ -117,32 +117,32 @@ class WebSocketManager @Inject constructor(
     }
 
     private fun listener(tag: String, onEvent: (WebSocketEventDto) -> Unit) = object : WebSocketListener() {
-        override fun onOpen(webSocket: WebSocket, response: okhttp3.Response) {
-            android.util.Log.d("WS", "[$tag] onOpen code=${response.code} url=${response.request.url}")
+        override fun onOpen(webSocket: WebSocket, response: Response) {
+            Log.d("WS", "[$tag] onOpen code=${response.code} url=${response.request.url}")
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
-            android.util.Log.d("WS", "[$tag] onMessage raw=$text")
+            Log.d("WS", "[$tag] onMessage raw=$text")
             runCatching { json.decodeFromString<WebSocketEventDto>(text) }
                 .onSuccess {
-                    android.util.Log.d("WS", "[$tag] decoded event=${it.event}")
+                    Log.d("WS", "[$tag] decoded event=${it.event}")
                     onEvent(it)
                 }
                 .onFailure {
-                    android.util.Log.e("WS", "[$tag] decode failed", it)
+                    Log.e("WS", "[$tag] decode failed", it)
                 }
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-            android.util.Log.d("WS", "[$tag] onClosing code=$code reason=$reason")
+            Log.d("WS", "[$tag] onClosing code=$code reason=$reason")
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            android.util.Log.d("WS", "[$tag] onClosed code=$code reason=$reason")
+            Log.d("WS", "[$tag] onClosed code=$code reason=$reason")
         }
 
-        override fun onFailure(webSocket: WebSocket, t: Throwable, response: okhttp3.Response?) {
-            android.util.Log.e(
+        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+            Log.e(
                 "WS",
                 "[$tag] onFailure code=${response?.code} message=${response?.message} url=${response?.request?.url}",
                 t
