@@ -32,6 +32,11 @@ class ChatsViewModel @Inject constructor(
     private fun observeCurrentUser() = viewModelScope.launch {
         authRepository.observeCurrentUser().collect { user ->
             _state.update { it.copy(currentUser = user) }
+
+            val currentUserId = user?.id
+            if (!currentUserId.isNullOrBlank()) {
+                observeGlobalEventsOnce(currentUserId)
+            }
         }
     }
 
@@ -45,7 +50,11 @@ class ChatsViewModel @Inject constructor(
         runCatching { chatsRepository.getChats() }
             .onSuccess { items ->
                 _state.update { it.copy(loading = false, items = items, isEmpty = items.isEmpty()) }
-                observeGlobalEventsOnce()
+
+                val currentUserId = _state.value.currentUser?.id
+                if (!currentUserId.isNullOrBlank()) {
+                    observeGlobalEventsOnce(currentUserId)
+                }
             }
             .onFailure { error ->
                 _state.update { state ->
@@ -54,14 +63,24 @@ class ChatsViewModel @Inject constructor(
             }
     }
 
-    private fun observeGlobalEventsOnce() {
+    private fun observeGlobalEventsOnce(currentUserId: String) {
         if (globalEventsJob != null) return
+
         globalEventsJob = viewModelScope.launch {
-            chatsRepository.globalEvents().collect { updated ->
+            chatsRepository.globalEvents(currentUserId).collect { updated ->
                 _state.update { current ->
-                    current.copy(items = current.items.map {
-                        if (it.id == updated.id) it.copy(unreadCount = updated.unreadCount, lastMessage = updated.lastMessage) else it
-                    })
+                    current.copy(
+                        items = current.items.map {
+                            if (it.id == updated.id) {
+                                it.copy(
+                                    unreadCount = updated.unreadCount,
+                                    lastMessage = updated.lastMessage
+                                )
+                            } else {
+                                it
+                            }
+                        }
+                    )
                 }
             }
         }

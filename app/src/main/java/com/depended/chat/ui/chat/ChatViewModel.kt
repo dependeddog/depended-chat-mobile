@@ -1,5 +1,6 @@
 package com.depended.chat.ui.chat
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.depended.chat.domain.model.Message
@@ -57,31 +58,61 @@ class ChatViewModel @Inject constructor(
 
     private fun observeSocket(chatId: String) {
         chatEventsJob?.cancel()
+
+        Log.d("WS_CHAT_VM", "[observeSocket.start] chatId=$chatId")
+
         chatEventsJob = viewModelScope.launch {
             chatsRepository.chatEvents(chatId).collect { event ->
+                Log.d("WS_CHAT_VM", "[collect] chatId=$chatId event=$event")
+
                 _state.update { current ->
                     when (event) {
                         is MessageEvent.Created -> {
                             val incoming = event.message
                             val existing = current.messages.indexOfFirst { it.id == incoming.id }
+
+                            Log.d(
+                                "WS_CHAT_VM",
+                                "[MessageEvent.Created] chatId=$chatId messageId=${incoming.id} existingIndex=$existing beforeSize=${current.messages.size}"
+                            )
+
                             if (existing >= 0) {
                                 val updated = current.messages.toMutableList()
                                 updated[existing] = incoming
+
+                                Log.d(
+                                    "WS_CHAT_VM",
+                                    "[MessageEvent.Created.updated] chatId=$chatId afterSize=${updated.size}"
+                                )
+
                                 current.copy(messages = updated)
                             } else {
-                                current.copy(messages = current.messages + incoming)
+                                val updated = current.messages + incoming
+
+                                Log.d(
+                                    "WS_CHAT_VM",
+                                    "[MessageEvent.Created.added] chatId=$chatId afterSize=${updated.size}"
+                                )
+
+                                current.copy(messages = updated)
                             }
                         }
 
                         is MessageEvent.ReadUpTo -> {
                             val readUpToId = event.readUpToMessageId
+                            Log.d("WS_CHAT_VM", "[MessageEvent.ReadUpTo] chatId=$chatId readUpToId=$readUpToId")
+
                             if (readUpToId.isNullOrBlank()) return@update current
+
                             val index = current.messages.indexOfFirst { it.id == readUpToId }
+                            Log.d("WS_CHAT_VM", "[MessageEvent.ReadUpTo] chatId=$chatId index=$index")
+
                             if (index < 0) return@update current
 
                             val updated = current.messages.mapIndexed { i, msg ->
                                 if (msg.isMine && i <= index) msg.copy(status = MessageStatus.READ) else msg
                             }
+
                             current.copy(messages = updated)
                         }
                     }

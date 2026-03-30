@@ -22,7 +22,7 @@ interface ChatsRepository {
     suspend fun getMessages(chatId: String): List<Message>
     suspend fun sendMessage(chatId: String, text: String): Message
     suspend fun markRead(chatId: String)
-    fun globalEvents(): Flow<ChatItem>
+    fun globalEvents(currentUserId: String): Flow<ChatItem>
     fun chatEvents(chatId: String): Flow<MessageEvent>
     suspend fun connectGlobal()
     suspend fun connectChat(chatId: String)

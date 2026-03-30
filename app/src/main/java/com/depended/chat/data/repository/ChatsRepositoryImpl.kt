@@ -1,11 +1,13 @@
 package com.depended.chat.data.repository
 
+import android.util.Log
 import com.depended.chat.data.remote.api.ChatsApi
 import com.depended.chat.data.remote.dto.ChatListItemDto
 import com.depended.chat.data.remote.dto.ChatReadEventDto
 import com.depended.chat.data.remote.dto.CreateDirectChatRequestDto
 import com.depended.chat.data.remote.dto.MessageCreateRequestDto
 import com.depended.chat.data.remote.dto.MessageDto
+import com.depended.chat.data.remote.dto.WsMessageCreatedDto
 import com.depended.chat.data.websocket.WebSocketManager
 import com.depended.chat.domain.model.ChatDetails
 import com.depended.chat.domain.model.ChatItem
@@ -46,29 +48,56 @@ class ChatsRepositoryImpl @Inject constructor(
         api.markRead(chatId)
     }
 
-    override fun globalEvents(): Flow<ChatItem> = wsManager.connectGlobal().mapNotNull { ev ->
+    override fun globalEvents(currentUserId: String): Flow<ChatItem> = wsManager.connectGlobal().mapNotNull { ev ->
         if (ev.event != "chat.list.updated") return@mapNotNull null
-        val chatId = ev.data["chat_id"]?.toString()?.trim('"') ?: return@mapNotNull null
+
+        val chatId = ev.data["id"]?.toString()?.trim('"') ?: return@mapNotNull null
         val unread = ev.data["unread_count"]?.toString()?.toIntOrNull() ?: 0
-        val lastMessage = ev.data["last_message"]?.let { json.decodeFromJsonElement<MessageDto>(it).toDomain() }
+        val lastMessage = ev.data["last_message"]?.let {
+            json.decodeFromJsonElement<WsMessageCreatedDto>(it).toDomain(currentUserId)
+        }
+
         ChatItem(chatId, ChatUser("", "Unknown"), lastMessage, unread, lastMessage?.createdAt.orEmpty())
     }
 
     override fun chatEvents(chatId: String): Flow<MessageEvent> = wsManager.connectChat(chatId).mapNotNull { ev ->
+        Log.d("WS_CHAT_REPO", "[chatEvents] chatId=$chatId event=${ev.event} data=${ev.data}")
+
         runCatching {
             when (ev.event) {
                 "message.created" -> {
                     val payload = ev.data["message"] ?: ev.data
-                    MessageEvent.Created(json.decodeFromJsonElement<MessageDto>(payload).toDomain())
+                    Log.d("WS_CHAT_REPO", "[message.created] chatId=$chatId payload=$payload")
+
+                    val dto = json.decodeFromJsonElement<WsMessageCreatedDto>(payload)
+                    Log.d(
+                        "WS_CHAT_REPO",
+                        "[message.created.parsed] chatId=$chatId id=${dto.id} senderId=${dto.senderId} text=${dto.text}"
+                    )
+
+                    MessageEvent.Created(dto.toDomain(currentUserId = "TODO_CURRENT_USER_ID"))
                 }
 
                 "chat.read" -> {
                     val payload = ev.data["read"] ?: ev.data
-                    MessageEvent.ReadUpTo(json.decodeFromJsonElement<ChatReadEventDto>(payload).readUpToMessageId)
+                    Log.d("WS_CHAT_REPO", "[chat.read] chatId=$chatId payload=$payload")
+
+                    val dto = json.decodeFromJsonElement<ChatReadEventDto>(payload)
+                    Log.d(
+                        "WS_CHAT_REPO",
+                        "[chat.read.parsed] chatId=$chatId readUpTo=${dto.readUpToMessageId}"
+                    )
+
+                    MessageEvent.ReadUpTo(dto.readUpToMessageId)
                 }
 
-                else -> null
+                else -> {
+                    Log.d("WS_CHAT_REPO", "[ignored] chatId=$chatId event=${ev.event}")
+                    null
+                }
             }
+        }.onFailure {
+            Log.e("WS_CHAT_REPO", "[parseError] chatId=$chatId event=${ev.event}", it)
         }.getOrNull()
     }
 
@@ -95,5 +124,15 @@ class ChatsRepositoryImpl @Inject constructor(
         createdAt = createdAt,
         isMine = isOwn,
         status = if (isOwn && readByCompanion) MessageStatus.READ else MessageStatus.SENT
+    )
+
+    private fun WsMessageCreatedDto.toDomain(currentUserId: String) = Message(
+        id = id,
+        chatId = chatId,
+        senderId = senderId,
+        text = text,
+        createdAt = createdAt,
+        isMine = senderId == currentUserId,
+        status = MessageStatus.SENT
     )
 }
