@@ -28,6 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
@@ -42,14 +45,27 @@ import com.depended.chat.ui.theme.BubbleOther
 fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit) {
     val state by viewModel.state.collectAsState()
     val listState = rememberLazyListState()
+    var initialScrollDone by remember(chatId) { mutableStateOf(false) }
 
     LaunchedEffect(chatId) {
         viewModel.init(chatId)
     }
 
+    LaunchedEffect(state.loading, state.messages.size) {
+        if (!state.loading && state.messages.isNotEmpty() && !initialScrollDone) {
+            listState.scrollToItem(state.messages.lastIndex)
+            initialScrollDone = true
+        }
+    }
+
     LaunchedEffect(state.messages.size) {
-        if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.lastIndex)
+        if (initialScrollDone && state.messages.isNotEmpty()) {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+            val nearBottom = lastVisible == null || lastVisible >= state.messages.lastIndex - 2
+
+            if (nearBottom) {
+                listState.animateScrollToItem(state.messages.lastIndex)
+            }
         }
     }
 

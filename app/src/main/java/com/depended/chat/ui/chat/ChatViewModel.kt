@@ -67,55 +67,50 @@ class ChatViewModel @Inject constructor(
             chatsRepository.chatEvents(chatId, currentUserId).collect { event ->
                 Log.d("WS_CHAT_VM", "[collect] chatId=$chatId event=$event")
 
-                _state.update { current ->
-                    when (event) {
-                        is MessageEvent.Created -> {
-                            val incoming = event.message
-                            val existing = current.messages.indexOfFirst { it.id == incoming.id }
+                when (event) {
+                    is MessageEvent.Created -> {
+                        val incoming = event.message
 
-                            Log.d(
-                                "WS_CHAT_VM",
-                                "[MessageEvent.Created] chatId=$chatId messageId=${incoming.id} existingIndex=$existing beforeSize=${current.messages.size}"
-                            )
+                        _state.update { current ->
+                            val existing = current.messages.indexOfFirst { it.id == incoming.id }
 
                             if (existing >= 0) {
                                 val updated = current.messages.toMutableList()
                                 updated[existing] = incoming
-
-                                Log.d(
-                                    "WS_CHAT_VM",
-                                    "[MessageEvent.Created.updated] chatId=$chatId afterSize=${updated.size}"
-                                )
-
                                 current.copy(messages = updated)
                             } else {
-                                val updated = current.messages + incoming
-
-                                Log.d(
-                                    "WS_CHAT_VM",
-                                    "[MessageEvent.Created.added] chatId=$chatId afterSize=${updated.size}"
-                                )
-
-                                current.copy(messages = updated)
+                                current.copy(messages = current.messages + incoming)
                             }
                         }
 
-                        is MessageEvent.ReadUpTo -> {
-                            val readUpToId = event.readUpToMessageId
-                            Log.d("WS_CHAT_VM", "[MessageEvent.ReadUpTo] chatId=$chatId readUpToId=$readUpToId")
-
-                            if (readUpToId.isNullOrBlank()) return@update current
-
-                            val index = current.messages.indexOfFirst { it.id == readUpToId }
-                            Log.d("WS_CHAT_VM", "[MessageEvent.ReadUpTo] chatId=$chatId index=$index")
-
-                            if (index < 0) return@update current
-
-                            val updated = current.messages.mapIndexed { i, msg ->
-                                if (msg.isMine && i <= index) msg.copy(status = MessageStatus.READ) else msg
+                        if (!incoming.isMine) {
+                            runCatching {
+                                chatsRepository.markRead(chatId)
+                            }.onFailure {
+                                Log.e("WS_CHAT_VM", "[markRead.onIncoming.failed] chatId=$chatId", it)
                             }
+                        }
+                    }
 
-                            current.copy(messages = updated)
+                    is MessageEvent.ReadUpTo -> {
+                        val readUpToId = event.readUpToMessageId
+                        Log.d("WS_CHAT_VM", "[MessageEvent.ReadUpTo] chatId=$chatId readUpToId=$readUpToId")
+
+                        if (!readUpToId.isNullOrBlank()) {
+                            _state.update { current ->
+                                val index = current.messages.indexOfFirst { it.id == readUpToId }
+                                if (index < 0) return@update current
+
+                                val updated = current.messages.mapIndexed { i, msg ->
+                                    if (msg.isMine && i <= index) {
+                                        msg.copy(status = MessageStatus.READ)
+                                    } else {
+                                        msg
+                                    }
+                                }
+
+                                current.copy(messages = updated)
+                            }
                         }
                     }
                 }
