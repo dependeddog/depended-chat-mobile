@@ -47,6 +47,13 @@ interface ChatsRepository {
     suspend fun getCurrentUserId(): String
 }
 
+interface PushTokenRepository {
+    suspend fun syncToken(token: String): Boolean
+    suspend fun deleteToken(token: String): Boolean
+    suspend fun getLastSyncedToken(): String?
+    suspend fun clearLastSyncedToken()
+}
+
 sealed class ChatListEvent {
     data class Upsert(val item: ChatItem) : ChatListEvent()
     data class Deleted(val chatId: String) : ChatListEvent()
