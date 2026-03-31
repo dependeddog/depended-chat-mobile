@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -27,6 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
@@ -40,13 +44,40 @@ import com.depended.chat.ui.theme.BubbleOther
 @Composable
 fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit) {
     val state by viewModel.state.collectAsState()
-    LaunchedEffect(chatId) { viewModel.init(chatId) }
+    val listState = rememberLazyListState()
+    var initialScrollDone by remember(chatId) { mutableStateOf(false) }
+
+    LaunchedEffect(chatId) {
+        viewModel.init(chatId)
+    }
+
+    LaunchedEffect(state.loading, state.messages.size) {
+        if (!state.loading && state.messages.isNotEmpty() && !initialScrollDone) {
+            listState.scrollToItem(state.messages.lastIndex)
+            initialScrollDone = true
+        }
+    }
+
+    LaunchedEffect(state.messages.size) {
+        if (initialScrollDone && state.messages.isNotEmpty()) {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+            val nearBottom = lastVisible == null || lastVisible >= state.messages.lastIndex - 2
+
+            if (nearBottom) {
+                listState.animateScrollToItem(state.messages.lastIndex)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(state.companionName.ifBlank { "Chat" }) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } }
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
+                    }
+                }
             )
         },
         bottomBar = {
@@ -66,21 +97,38 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit) {
                     shape = RectangleShape,
                     singleLine = true
                 )
-                IconButton(onClick = viewModel::send) { Icon(Icons.AutoMirrored.Filled.Send, null) }
+                IconButton(onClick = viewModel::send) {
+                    Icon(Icons.AutoMirrored.Filled.Send, null)
+                }
             }
         }
     ) { pad ->
         if (state.error != null && state.messages.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { Text(state.error!!) }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(pad),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(state.error!!)
+            }
             return@Scaffold
         }
 
         if (state.messages.isEmpty() && !state.loading) {
-            Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { Text("Пока нет сообщений") }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(pad),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Пока нет сообщений")
+            }
             return@Scaffold
         }
 
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(pad)

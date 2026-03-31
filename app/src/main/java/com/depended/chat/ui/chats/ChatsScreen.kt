@@ -33,6 +33,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,10 +48,18 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun ChatsScreen(viewModel: ChatsViewModel, onOpenChat: (String) -> Unit, onOpenAccount: () -> Unit) {
+fun ChatsScreen(
+    viewModel: ChatsViewModel,
+    onOpenChat: (String) -> Unit,
+    onOpenAccount: () -> Unit
+) {
     val state by viewModel.state.collectAsState()
+    val refreshState = rememberPullRefreshState(
+        refreshing = state.isRefreshing,
+        onRefresh = viewModel::refreshChats
+    )
 
     LaunchedEffect(Unit) {
         viewModel.loadCurrentUser()
@@ -93,7 +105,12 @@ fun ChatsScreen(viewModel: ChatsViewModel, onOpenChat: (String) -> Unit, onOpenA
             }
         }
     ) { pad ->
-        Box(Modifier.padding(pad).fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(pad)
+                .fillMaxSize()
+                .pullRefresh(refreshState)
+        ) {
             when {
                 state.loading && state.items.isEmpty() -> {
                     SkeletonChatsList()
@@ -108,14 +125,25 @@ fun ChatsScreen(viewModel: ChatsViewModel, onOpenChat: (String) -> Unit, onOpenA
                 }
 
                 else -> {
-                    LazyColumn {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
                         items(state.items, key = { it.id }) { item ->
-                            ChatListItem(item = item, onClick = { onOpenChat(item.id) })
+                            ChatListItem(
+                                item = item,
+                                onClick = { onOpenChat(item.id) }
+                            )
                             HorizontalDivider()
                         }
                     }
                 }
             }
+
+            PullRefreshIndicator(
+                refreshing = state.isRefreshing,
+                state = refreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
 }

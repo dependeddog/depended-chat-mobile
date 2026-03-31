@@ -20,9 +20,13 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
 //        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8000/\"")
-//        buildConfigField("String", "WS_BASE_URL", "\"ws://10.0.2.2:8000/\"")
+//        buildConfigField("String", "WS_BASE_URL", "\"ws://10.0.2.2:8000\"")
         buildConfigField("String", "BASE_URL", "\"http://192.168.0.9:8000/\"")
-        buildConfigField("String", "WS_BASE_URL", "\"ws://192.168.0.9:8000/\"")
+        buildConfigField("String", "WS_BASE_URL", "\"ws://192.168.0.9:8000\"")
+//        buildConfigField("String", "BASE_URL", "\"http://31.59.185.163:8000/\"")
+//        buildConfigField("String", "WS_BASE_URL", "\"ws://31.59.185.163:8000\"")
+//        buildConfigField("String", "BASE_URL", "\"http://172.20.10.3:8000/\"")
+//        buildConfigField("String", "WS_BASE_URL", "\"ws://172.20.10.3:8000\"")
     }
 
     buildTypes {
@@ -56,10 +60,13 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
     implementation("androidx.activity:activity-compose:1.9.1")
+
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material")
     implementation("androidx.compose.material:material-icons-extended")
+
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
