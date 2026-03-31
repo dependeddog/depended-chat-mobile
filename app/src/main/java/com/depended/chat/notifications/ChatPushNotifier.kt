@@ -51,7 +51,7 @@ class ChatPushNotifier @Inject constructor(
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_CHAT_MESSAGES)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("New message")
             .setContentText("type=$type sender=$senderId message=$messageId")
             .setAutoCancel(true)
