@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.depended.chat.domain.model.ChatItem
 import com.depended.chat.domain.model.CurrentUser
 import com.depended.chat.domain.repository.AuthRepository
+import com.depended.chat.domain.repository.ChatListEvent
 import com.depended.chat.domain.repository.ChatsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -77,31 +78,31 @@ class ChatsViewModel @Inject constructor(
         if (globalEventsJob != null) return
 
         globalEventsJob = viewModelScope.launch {
-            chatsRepository.globalEvents(currentUserId).collect { updated ->
+            chatsRepository.globalEvents(currentUserId).collect { event ->
                 _state.update { current ->
-                    val existingIndex = current.items.indexOfFirst { it.id == updated.id }
-
-                    val newItems = if (existingIndex >= 0) {
-                        current.items.map { item ->
-                            if (item.id == updated.id) {
-                                item.copy(
-                                    companion = if (updated.companion.username.isNotBlank()) updated.companion else item.companion,
-                                    unreadCount = updated.unreadCount,
-                                    lastMessage = updated.lastMessage,
-                                    updatedAt = updated.updatedAt
-                                )
+                    val newItems = when (event) {
+                        is ChatListEvent.Upsert -> {
+                            val updated = event.item
+                            val existingIndex = current.items.indexOfFirst { it.id == updated.id }
+                            if (existingIndex >= 0) {
+                                current.items.map { item ->
+                                    if (item.id == updated.id) {
+                                        item.copy(
+                                            companion = if (updated.companion.username.isNotBlank()) updated.companion else item.companion,
+                                            unreadCount = updated.unreadCount,
+                                            lastMessage = updated.lastMessage,
+                                            updatedAt = updated.updatedAt
+                                        )
+                                    } else item
+                                }
                             } else {
-                                item
+                                listOf(updated) + current.items
                             }
                         }
-                    } else {
-                        listOf(updated) + current.items
+                        is ChatListEvent.Deleted -> current.items.filterNot { it.id == event.chatId }
                     }.sortedByDescending { it.updatedAt }
 
-                    current.copy(
-                        items = newItems,
-                        isEmpty = newItems.isEmpty()
-                    )
+                    current.copy(items = newItems, isEmpty = newItems.isEmpty())
                 }
             }
         }
@@ -166,6 +167,13 @@ class ChatsViewModel @Inject constructor(
                     )
                 }
             }
+    }
+
+    fun onChatDeleted(chatId: String) {
+        _state.update { current ->
+            val newItems = current.items.filterNot { it.id == chatId }
+            current.copy(items = newItems, isEmpty = newItems.isEmpty())
+        }
     }
 }
 

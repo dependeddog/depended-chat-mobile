@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "768322976348",
+    "project_id": "depended-chat",
+    "storage_bucket": "depended-chat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:768322976348:android:dbcf263c142cbbf0f58499",
+        "android_client_info": {
+          "package_name": "com.depended.chat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKwfVGs0ITP5sLOku6thUgFYu-xpQlo74"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
