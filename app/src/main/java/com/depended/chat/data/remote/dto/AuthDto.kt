@@ -12,7 +12,11 @@ data class AuthRequestDto(val username: String, val password: String)
 @Serializable
 data class UserReadDto(
     val id: String,
-    val username: String
+    val username: String,
+    val bio: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("has_avatar") val hasAvatar: Boolean = false,
+    @SerialName("last_seen_at") val lastSeenAt: String? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")

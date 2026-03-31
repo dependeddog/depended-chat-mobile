@@ -15,6 +15,8 @@ import com.depended.chat.ui.chat.ChatScreen
 import com.depended.chat.ui.chat.ChatViewModel
 import com.depended.chat.ui.chats.ChatsScreen
 import com.depended.chat.ui.chats.ChatsViewModel
+import com.depended.chat.ui.profile.UserProfileScreen
+import com.depended.chat.ui.profile.UserProfileViewModel
 import com.depended.chat.ui.splash.SplashScreen
 import com.depended.chat.ui.splash.SplashViewModel
 
@@ -61,7 +63,17 @@ fun AppNavHost() {
         composable(Route.Chat.path, arguments = listOf(navArgument("chatId") { type = NavType.StringType })) { backStack ->
             val chatId = backStack.arguments?.getString("chatId").orEmpty()
             val vm = hiltViewModel<ChatViewModel>()
-            ChatScreen(vm, chatId, onBack = { navController.popBackStack() })
+            ChatScreen(
+                viewModel = vm,
+                chatId = chatId,
+                onBack = { navController.popBackStack() },
+                onOpenCompanionProfile = { userId -> navController.navigate(Route.UserProfile.create(userId)) }
+            )
+        }
+        composable(Route.UserProfile.path, arguments = listOf(navArgument("userId") { type = NavType.StringType })) { backStack ->
+            val userId = backStack.arguments?.getString("userId").orEmpty()
+            val vm = hiltViewModel<UserProfileViewModel>()
+            UserProfileScreen(vm, userId = userId, onBack = { navController.popBackStack() })
         }
     }
 }

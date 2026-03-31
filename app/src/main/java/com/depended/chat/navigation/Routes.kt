@@ -8,4 +8,8 @@ sealed class Route(val path: String) {
     data object Chat : Route("chat/{chatId}") {
         fun create(chatId: String) = "chat/$chatId"
     }
+
+    data object UserProfile : Route("profile/{userId}") {
+        fun create(userId: String) = "profile/$userId"
+    }
 }
