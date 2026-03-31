@@ -18,7 +18,9 @@ data class Message(
     val text: String,
     val createdAt: String,
     val isMine: Boolean,
-    val status: MessageStatus
+    val status: MessageStatus,
+    val isEdited: Boolean,
+    val editedAt: String?
 )
 
 data class ChatItem(

@@ -13,3 +13,14 @@ data class ChatReadEventDto(
     @SerialName("user_id") val userId: String? = null,
     @SerialName("read_up_to_message_id") val readUpToMessageId: String? = null
 )
+
+@Serializable
+data class MessageDeletedEventDto(
+    @SerialName("chat_id") val chatId: String,
+    @SerialName("message_id") val messageId: String
+)
+
+@Serializable
+data class ChatDeletedEventDto(
+    @SerialName("chat_id") val chatId: String
+)
