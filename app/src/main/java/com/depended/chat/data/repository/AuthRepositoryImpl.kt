@@ -66,6 +66,13 @@ class AuthRepositoryImpl @Inject constructor(
         val token = sessionManager.getSession().accessToken
         check(token.isNotBlank()) { "Not authorized" }
         val dto = api.whoami("Bearer $token")
-        return CurrentUser(id = dto.id, username = dto.username).also { currentUserFlow.value = it }
+        return CurrentUser(
+            id = dto.id,
+            username = dto.username,
+            bio = dto.bio,
+            avatarUrl = dto.avatarUrl,
+            avatarBase64 = dto.avatarBase64,
+            lastSeen = dto.lastSeen
+        ).also { currentUserFlow.value = it }
     }
 }

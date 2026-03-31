@@ -46,7 +46,10 @@ class ChatViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         loading = false,
+                        companionId = details.companion.id,
                         companionName = details.companion.username,
+                        companionAvatarUrl = details.companion.avatarUrl,
+                        companionAvatarBase64 = details.companion.avatarBase64,
                         messages = messages,
                         error = null
                     )
@@ -151,7 +154,10 @@ class ChatViewModel @Inject constructor(
 data class ChatUiState(
     val chatId: String = "",
     val currentUserId: String = "",
+    val companionId: String = "",
     val companionName: String = "",
+    val companionAvatarUrl: String? = null,
+    val companionAvatarBase64: String? = null,
     val input: String = "",
     val loading: Boolean = false,
     val error: String? = null,

@@ -47,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.depended.chat.ui.components.UserAvatar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
@@ -83,15 +84,12 @@ fun ChatsScreen(
                 navigationIcon = {
                     IconButton(onClick = onOpenAccount) {
                         if (state.currentUser != null) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(MaterialTheme.shapes.small)
-                                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(state.currentUser!!.username.take(1).uppercase())
-                            }
+                            UserAvatar(
+                                username = state.currentUser!!.username,
+                                avatarUrl = state.currentUser!!.avatarUrl,
+                                avatarBase64 = state.currentUser!!.avatarBase64,
+                                size = 32.dp
+                            )
                         } else {
                             Icon(Icons.Default.AccountCircle, contentDescription = "Аккаунт")
                         }
@@ -157,13 +155,12 @@ private fun ChatListItem(item: com.depended.chat.domain.model.ChatItem, onClick:
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            Modifier
-                .size(44.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.secondaryContainer),
-            contentAlignment = Alignment.Center
-        ) { Text(item.companion.username.take(1).uppercase()) }
+        UserAvatar(
+            username = item.companion.username,
+            avatarUrl = item.companion.avatarUrl,
+            avatarBase64 = item.companion.avatarBase64,
+            size = 44.dp
+        )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(item.companion.username, style = MaterialTheme.typography.titleMedium)

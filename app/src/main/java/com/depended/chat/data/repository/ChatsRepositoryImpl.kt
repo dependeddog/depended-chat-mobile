@@ -40,7 +40,18 @@ class ChatsRepositoryImpl @Inject constructor(
 
     override suspend fun getChatDetails(chatId: String): ChatDetails {
         val dto = api.getChat(chatId)
-        return ChatDetails(dto.chatId, ChatUser(dto.companion.id, dto.companion.username), dto.unreadCount)
+        return ChatDetails(
+            chatId = dto.chatId,
+            companion = ChatUser(
+                id = dto.companion.id,
+                username = dto.companion.username,
+                avatarUrl = dto.companion.avatarUrl,
+                avatarBase64 = dto.companion.avatarBase64,
+                bio = dto.companion.bio,
+                lastSeen = dto.companion.lastSeen
+            ),
+            unreadCount = dto.unreadCount
+        )
     }
 
     override suspend fun getMessages(chatId: String): List<Message> = api.getMessages(chatId).items.map { it.toDomain() }
@@ -62,6 +73,10 @@ class ChatsRepositoryImpl @Inject constructor(
             val companionElement = ev.data["companion"] ?: return@mapNotNull null
             val companionId = companionElement.jsonObject["id"]?.toString()?.trim('"').orEmpty()
             val companionUsername = companionElement.jsonObject["username"]?.toString()?.trim('"').orEmpty()
+            val companionAvatarUrl = companionElement.jsonObject["avatar_url"]?.toString()?.trim('"')
+            val companionAvatarBase64 = companionElement.jsonObject["avatar_base64"]?.toString()?.trim('"')
+            val companionBio = companionElement.jsonObject["bio"]?.toString()?.trim('"')
+            val companionLastSeen = companionElement.jsonObject["last_seen"]?.toString()?.trim('"')
 
             val lastMessageElement = ev.data["last_message"]
             val lastMessage = if (lastMessageElement == null || lastMessageElement is JsonNull) {
@@ -77,7 +92,14 @@ class ChatsRepositoryImpl @Inject constructor(
 
             ChatItem(
                 id = chatId,
-                companion = ChatUser(companionId, companionUsername),
+                companion = ChatUser(
+                    id = companionId,
+                    username = companionUsername,
+                    avatarUrl = companionAvatarUrl,
+                    avatarBase64 = companionAvatarBase64,
+                    bio = companionBio,
+                    lastSeen = companionLastSeen
+                ),
                 lastMessage = lastMessage,
                 unreadCount = unread,
                 updatedAt = updatedAt
@@ -138,7 +160,14 @@ class ChatsRepositoryImpl @Inject constructor(
 
     private fun ChatListItemDto.toDomain() = ChatItem(
         id = id,
-        companion = ChatUser(companion.id, companion.username),
+        companion = ChatUser(
+            id = companion.id,
+            username = companion.username,
+            avatarUrl = companion.avatarUrl,
+            avatarBase64 = companion.avatarBase64,
+            bio = companion.bio,
+            lastSeen = companion.lastSeen
+        ),
         lastMessage = lastMessage?.toDomain(),
         unreadCount = unreadCount,
         updatedAt = updatedAt

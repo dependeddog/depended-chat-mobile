@@ -4,6 +4,7 @@ import com.depended.chat.domain.model.ChatDetails
 import com.depended.chat.domain.model.ChatItem
 import com.depended.chat.domain.model.CurrentUser
 import com.depended.chat.domain.model.Message
+import com.depended.chat.domain.model.UserProfile
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
@@ -13,6 +14,15 @@ interface AuthRepository {
     suspend fun refreshIfNeeded(): Boolean
     suspend fun getCurrentUser(forceRefresh: Boolean = false): CurrentUser
     fun observeCurrentUser(): Flow<CurrentUser?>
+}
+
+interface ProfileRepository {
+    suspend fun getMyProfile(forceRefresh: Boolean = false): UserProfile
+    suspend fun getUserProfile(userId: String): UserProfile
+    suspend fun updateBio(bio: String?): UserProfile
+    suspend fun uploadAvatar(bytes: ByteArray, mimeType: String): UserProfile
+    suspend fun deleteAvatar(): UserProfile
+    suspend fun touchLastSeen()
 }
 
 interface ChatsRepository {

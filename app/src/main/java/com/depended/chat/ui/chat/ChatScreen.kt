@@ -1,6 +1,7 @@
 package com.depended.chat.ui.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,12 +38,13 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.depended.chat.domain.model.Message
 import com.depended.chat.domain.model.MessageStatus
+import com.depended.chat.ui.components.UserAvatar
 import com.depended.chat.ui.theme.BubbleMine
 import com.depended.chat.ui.theme.BubbleOther
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit) {
+fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit, onOpenCompanionProfile: (String) -> Unit) {
     val state by viewModel.state.collectAsState()
     val listState = rememberLazyListState()
     var initialScrollDone by remember(chatId) { mutableStateOf(false) }
@@ -72,7 +74,22 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.companionName.ifBlank { "Chat" }) },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable(enabled = state.companionId.isNotBlank()) {
+                            if (state.companionId.isNotBlank()) onOpenCompanionProfile(state.companionId)
+                        }
+                    ) {
+                        UserAvatar(
+                            username = state.companionName.ifBlank { "?" },
+                            avatarUrl = state.companionAvatarUrl,
+                            avatarBase64 = state.companionAvatarBase64,
+                            size = 32.dp
+                        )
+                        Text(state.companionName.ifBlank { "Chat" }, modifier = Modifier.padding(start = 8.dp))
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null)

@@ -6,11 +6,7 @@ import kotlinx.serialization.Serializable
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class AuthRequestDto(val username: String, val password: String)
-
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
-data class UserReadDto(
+data class UserProfileDto(
     val id: String,
     val username: String,
     val bio: String? = null,
@@ -21,8 +17,10 @@ data class UserReadDto(
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class AuthResponseDto(
-    @SerialName("access_token") val accessToken: String,
-    @SerialName("access_expires_in") val accessExpiresIn: Long,
-    @SerialName("refresh_token") val refreshToken: String
+data class UpdateBioRequestDto(val bio: String?)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class LastSeenTouchRequestDto(
+    @SerialName("last_seen") val lastSeen: String? = null
 )

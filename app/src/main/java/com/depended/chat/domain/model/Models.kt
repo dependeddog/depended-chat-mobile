@@ -1,6 +1,13 @@
 package com.depended.chat.domain.model
 
-data class ChatUser(val id: String, val username: String)
+data class ChatUser(
+    val id: String,
+    val username: String,
+    val avatarUrl: String? = null,
+    val avatarBase64: String? = null,
+    val bio: String? = null,
+    val lastSeen: String? = null
+)
 
 enum class MessageStatus { SENT, READ }
 
@@ -30,5 +37,18 @@ data class ChatDetails(
 
 data class CurrentUser(
     val id: String,
-    val username: String
+    val username: String,
+    val bio: String? = null,
+    val avatarUrl: String? = null,
+    val avatarBase64: String? = null,
+    val lastSeen: String? = null
+)
+
+data class UserProfile(
+    val id: String,
+    val username: String,
+    val bio: String? = null,
+    val avatarUrl: String? = null,
+    val avatarBase64: String? = null,
+    val lastSeen: String? = null
 )
