@@ -18,6 +18,14 @@ data class UserProfileDto(
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
+data class AvatarUploadResponseDto(
+    @SerialName("has_avatar") val hasAvatar: Boolean,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("avatar_mime_type") val avatarMimeType: String? = null
+)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
 data class UpdateBioRequestDto(val bio: String?)
 
 @SuppressLint("UnsafeOptInUsageError")

@@ -1,5 +1,6 @@
 package com.depended.chat.data.remote.api
 
+import com.depended.chat.data.remote.dto.AvatarUploadResponseDto
 import com.depended.chat.data.remote.dto.LastSeenReadDto
 import com.depended.chat.data.remote.dto.UpdateBioRequestDto
 import com.depended.chat.data.remote.dto.UserProfileDto
@@ -23,10 +24,10 @@ interface ProfileApi {
 
     @Multipart
     @PUT("users/me/avatar")
-    suspend fun uploadMyAvatar(@Part avatar: MultipartBody.Part): UserProfileDto
+    suspend fun uploadMyAvatar(@Part avatar: MultipartBody.Part): AvatarUploadResponseDto
 
     @DELETE("users/me/avatar")
-    suspend fun deleteMyAvatar(): UserProfileDto
+    suspend fun deleteMyAvatar(): AvatarUploadResponseDto
 
     @GET("users/{userId}/profile")
     suspend fun getUserProfile(@Path("userId") userId: String): UserProfileDto

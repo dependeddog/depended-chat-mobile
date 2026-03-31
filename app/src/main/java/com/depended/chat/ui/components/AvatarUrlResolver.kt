@@ -6,7 +6,8 @@ object AvatarUrlResolver {
     fun resolve(avatarUrl: String?, userId: String?, hasAvatar: Boolean): String? {
         val candidate = when {
             !avatarUrl.isNullOrBlank() -> avatarUrl
-            hasAvatar && !userId.isNullOrBlank() -> "/users/$userId/avatar"
+            !userId.isNullOrBlank() && hasAvatar -> "/users/$userId/avatar"
+            !userId.isNullOrBlank() -> "/users/$userId/avatar"
             else -> null
         } ?: return null
 

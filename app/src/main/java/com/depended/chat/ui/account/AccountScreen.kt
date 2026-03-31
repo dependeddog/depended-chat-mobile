@@ -50,7 +50,7 @@ fun AccountScreen(viewModel: AccountViewModel, onBack: () -> Unit, onLoggedOut: 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
             val bytes = context.readBytes(uri)
-            val mime = context.contentResolver.getType(uri) ?: "image/*"
+            val mime = context.resolveImageMimeType(uri)
             if (bytes != null) {
                 viewModel.uploadAvatar(bytes, mime)
             }
@@ -162,3 +162,16 @@ fun AccountScreen(viewModel: AccountViewModel, onBack: () -> Unit, onLoggedOut: 
 private fun Context.readBytes(uri: Uri): ByteArray? = runCatching {
     contentResolver.openInputStream(uri)?.use { it.readBytes() }
 }.getOrNull()
+
+
+private fun Context.resolveImageMimeType(uri: Uri): String {
+    val direct = contentResolver.getType(uri)
+    if (!direct.isNullOrBlank() && direct != "image/*") return direct
+
+    val path = uri.toString().lowercase()
+    return when {
+        path.endsWith(".png") -> "image/png"
+        path.endsWith(".webp") -> "image/webp"
+        else -> "image/jpeg"
+    }
+}

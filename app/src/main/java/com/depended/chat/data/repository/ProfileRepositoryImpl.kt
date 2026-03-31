@@ -30,12 +30,23 @@ class ProfileRepositoryImpl @Inject constructor(
         api.updateMyProfile(UpdateBioRequestDto(bio = bio)).toDomain().also { cachedMyProfile = it }
 
     override suspend fun uploadAvatar(bytes: ByteArray, mimeType: String): UserProfile {
-        val requestFile = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
-        val avatarPart = MultipartBody.Part.createFormData("avatar", "avatar", requestFile)
-        return api.uploadMyAvatar(avatarPart).toDomain().also { cachedMyProfile = it }
+        val safeMimeType = mimeType.takeIf { it.startsWith("image/") && it.contains('/') } ?: "image/jpeg"
+        val requestFile = bytes.toRequestBody(safeMimeType.toMediaTypeOrNull())
+        val extension = when (safeMimeType.substringAfter('/')) {
+            "jpeg", "jpg" -> "jpg"
+            "png" -> "png"
+            "webp" -> "webp"
+            else -> "jpg"
+        }
+        val avatarPart = MultipartBody.Part.createFormData("avatar", "avatar.$extension", requestFile)
+        api.uploadMyAvatar(avatarPart)
+        return getMyProfile(forceRefresh = true)
     }
 
-    override suspend fun deleteAvatar(): UserProfile = api.deleteMyAvatar().toDomain().also { cachedMyProfile = it }
+    override suspend fun deleteAvatar(): UserProfile {
+        api.deleteMyAvatar()
+        return getMyProfile(forceRefresh = true)
+    }
 
     private fun UserProfileDto.toDomain() = UserProfile(
         id = id,
