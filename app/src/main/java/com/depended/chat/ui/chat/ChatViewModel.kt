@@ -33,14 +33,19 @@ class ChatViewModel @Inject constructor(
 
     fun init(chatId: String) {
         if (_state.value.chatId == chatId) return
+
         val previousChatId = _state.value.chatId
         chatEventsJob?.cancel()
+
         if (previousChatId.isNotBlank()) {
             viewModelScope.launch { chatsRepository.disconnectChat(previousChatId) }
         }
+
         _state.update { it.copy(chatId = chatId) }
+
         viewModelScope.launch {
             _state.update { it.copy(loading = true) }
+
             runCatching {
                 val currentUserId = chatsRepository.getCurrentUserId()
                 val details = chatsRepository.getChatDetails(chatId)
@@ -53,14 +58,22 @@ class ChatViewModel @Inject constructor(
                     it.copy(
                         loading = false,
                         currentUserId = currentUserId,
+                        companionId = details.companion.id,
                         companionName = details.companion.username,
+                        companionAvatarUrl = details.companion.avatarUrl,
+                        companionHasAvatar = details.companion.hasAvatar,
                         messages = messages,
                         error = null
                     )
                 }
                 observeSocket(chatId, currentUserId)
             }.onFailure { err ->
-                _state.update { it.copy(loading = false, error = err.message ?: "Не удалось открыть чат") }
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        error = err.message ?: "Не удалось открыть чат"
+                    )
+                }
             }
         }
     }
@@ -74,11 +87,13 @@ class ChatViewModel @Inject constructor(
                     is MessageEvent.Created -> upsertMessage(event.message)
                     is MessageEvent.Updated -> upsertMessage(event.message)
                     is MessageEvent.Deleted -> removeMessage(event.messageId)
+
                     is MessageEvent.ChatDeleted -> {
                         if (event.chatId == _state.value.chatId) {
                             _events.emit(ChatUiEvent.ChatDeleted)
                         }
                     }
+
                     is MessageEvent.ReadUpTo -> applyReadStatus(event.readUpToMessageId)
                 }
             }
@@ -121,7 +136,11 @@ class ChatViewModel @Inject constructor(
             if (index < 0) return@update current
 
             val updated = current.messages.mapIndexed { i, msg ->
-                if (msg.isMine && i <= index) msg.copy(status = MessageStatus.READ) else msg
+                if (msg.isMine && i <= index) {
+                    msg.copy(status = MessageStatus.READ)
+                } else {
+                    msg
+                }
             }
             current.copy(messages = updated)
         }
@@ -137,10 +156,15 @@ class ChatViewModel @Inject constructor(
         if (chatId.isBlank() || text.isBlank()) return@launch
 
         _state.update { it.copy(input = "") }
+
         runCatching { chatsRepository.sendMessage(chatId, text) }
             .onSuccess { sent ->
                 _state.update { current ->
-                    if (current.messages.any { it.id == sent.id }) current else current.copy(messages = current.messages + sent)
+                    if (current.messages.any { it.id == sent.id }) {
+                        current
+                    } else {
+                        current.copy(messages = current.messages + sent)
+                    }
                 }
             }
             .onFailure {
@@ -152,19 +176,26 @@ class ChatViewModel @Inject constructor(
     fun updateMessage(messageId: String, originalText: String, newText: String) = viewModelScope.launch {
         val chatId = _state.value.chatId
         val trimmed = newText.trim()
+
         if (chatId.isBlank()) return@launch
+
         if (trimmed.isBlank()) {
             emitError("Текст сообщения не должен быть пустым")
             return@launch
         }
+
         if (trimmed == originalText) return@launch
 
         _state.update { it.copy(editingInProgress = true) }
+
         runCatching { chatsRepository.updateMessage(chatId, messageId, trimmed) }
             .onSuccess { updated ->
                 upsertMessage(updated)
             }
-            .onFailure { emitError(it.message ?: "Не удалось изменить сообщение") }
+            .onFailure {
+                emitError(it.message ?: "Не удалось изменить сообщение")
+            }
+
         _state.update { it.copy(editingInProgress = false) }
     }
 
@@ -173,9 +204,11 @@ class ChatViewModel @Inject constructor(
         if (chatId.isBlank()) return@launch
 
         _state.update { it.copy(deleteMessageInProgress = true) }
+
         runCatching { chatsRepository.deleteMessage(chatId, messageId) }
             .onSuccess { removeMessage(messageId) }
             .onFailure { emitError(it.message ?: "Не удалось удалить сообщение") }
+
         _state.update { it.copy(deleteMessageInProgress = false) }
     }
 
@@ -184,11 +217,15 @@ class ChatViewModel @Inject constructor(
         if (chatId.isBlank()) return@launch
 
         _state.update { it.copy(deleteChatInProgress = true) }
+
         runCatching { chatsRepository.deleteChat(chatId) }
             .onSuccess {
                 _events.emit(ChatUiEvent.ChatDeleted)
             }
-            .onFailure { emitError(it.message ?: "Не удалось удалить чат") }
+            .onFailure {
+                emitError(it.message ?: "Не удалось удалить чат")
+            }
+
         _state.update { it.copy(deleteChatInProgress = false) }
     }
 
@@ -208,7 +245,10 @@ class ChatViewModel @Inject constructor(
 data class ChatUiState(
     val chatId: String = "",
     val currentUserId: String = "",
+    val companionId: String = "",
     val companionName: String = "",
+    val companionAvatarUrl: String? = null,
+    val companionHasAvatar: Boolean = false,
     val input: String = "",
     val loading: Boolean = false,
     val error: String? = null,

@@ -2,6 +2,7 @@ package com.depended.chat.ui.chat
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,12 +48,19 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.depended.chat.domain.model.Message
 import com.depended.chat.domain.model.MessageStatus
+import com.depended.chat.ui.components.UserAvatar
 import com.depended.chat.ui.theme.BubbleMine
 import com.depended.chat.ui.theme.BubbleOther
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit, onChatDeleted: () -> Unit) {
+fun ChatScreen(
+    viewModel: ChatViewModel,
+    chatId: String,
+    onBack: () -> Unit,
+    onOpenCompanionProfile: (String) -> Unit,
+    onChatDeleted: () -> Unit
+) {
     val state by viewModel.state.collectAsState()
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -124,13 +132,17 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit, onC
                         messageToDelete = null
                     },
                     enabled = !state.deleteMessageInProgress
-                ) { Text("Удалить") }
+                ) {
+                    Text("Удалить")
+                }
             },
             dismissButton = {
                 TextButton(
                     onClick = { messageToDelete = null },
                     enabled = !state.deleteMessageInProgress
-                ) { Text("Отмена") }
+                ) {
+                    Text("Отмена")
+                }
             }
         )
     }
@@ -149,13 +161,19 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit, onC
                     enabled = !state.deleteChatInProgress
                 ) {
                     if (state.deleteChatInProgress) {
-                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(end = 8.dp))
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
                     }
                     Text("Удалить")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteChatConfirm = false }, enabled = !state.deleteChatInProgress) {
+                TextButton(
+                    onClick = { showDeleteChatConfirm = false },
+                    enabled = !state.deleteChatInProgress
+                ) {
                     Text("Отмена")
                 }
             }
@@ -166,7 +184,28 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit, onC
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(state.companionName.ifBlank { "Chat" }) },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable(enabled = state.companionId.isNotBlank()) {
+                            if (state.companionId.isNotBlank()) {
+                                onOpenCompanionProfile(state.companionId)
+                            }
+                        }
+                    ) {
+                        UserAvatar(
+                            username = state.companionName.ifBlank { "?" },
+                            avatarUrl = state.companionAvatarUrl,
+                            userId = state.companionId,
+                            hasAvatar = state.companionHasAvatar,
+                            size = 32.dp
+                        )
+                        Text(
+                            state.companionName.ifBlank { "Chat" },
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
@@ -177,7 +216,10 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit, onC
                         IconButton(onClick = { chatMenuExpanded = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Действия")
                         }
-                        DropdownMenu(expanded = chatMenuExpanded, onDismissRequest = { chatMenuExpanded = false }) {
+                        DropdownMenu(
+                            expanded = chatMenuExpanded,
+                            onDismissRequest = { chatMenuExpanded = false }
+                        ) {
                             DropdownMenuItem(
                                 text = { Text("Удалить чат") },
                                 onClick = {
@@ -246,9 +288,14 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit, onC
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(state.messages, key = { it.id }) { msg ->
-                MessageBubble(msg, onLongPress = {
-                    if (msg.isMine) selectedMessage = msg
-                })
+                MessageBubble(
+                    msg = msg,
+                    onLongPress = {
+                        if (msg.isMine) {
+                            selectedMessage = msg
+                        }
+                    }
+                )
             }
         }
     }
@@ -259,18 +306,28 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit, onC
             title = { Text("Действия с сообщением") },
             text = { Text("Выберите действие") },
             confirmButton = {
-                TextButton(onClick = {
-                    messageToEdit = selectedMessage
-                    selectedMessage = null
-                }) { Text("Изменить") }
+                TextButton(
+                    onClick = {
+                        messageToEdit = selectedMessage
+                        selectedMessage = null
+                    }
+                ) {
+                    Text("Изменить")
+                }
             },
             dismissButton = {
                 Row {
-                    TextButton(onClick = {
-                        messageToDelete = selectedMessage
-                        selectedMessage = null
-                    }) { Text("Удалить") }
-                    TextButton(onClick = { selectedMessage = null }) { Text("Отмена") }
+                    TextButton(
+                        onClick = {
+                            messageToDelete = selectedMessage
+                            selectedMessage = null
+                        }
+                    ) {
+                        Text("Удалить")
+                    }
+                    TextButton(onClick = { selectedMessage = null }) {
+                        Text("Отмена")
+                    }
                 }
             }
         )
@@ -288,11 +345,18 @@ private fun MessageBubble(msg: Message, onLongPress: () -> Unit) {
             color = if (msg.isMine) BubbleMine else BubbleOther,
             shape = MaterialTheme.shapes.large,
             tonalElevation = 1.dp,
-            modifier = Modifier.combinedClickable(onClick = {}, onLongClick = onLongPress)
+            modifier = Modifier.combinedClickable(
+                onClick = {},
+                onLongClick = onLongPress
+            )
         ) {
             Text(msg.text, Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
         }
-        Row(modifier = Modifier.padding(top = 2.dp, end = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+        Row(
+            modifier = Modifier.padding(top = 2.dp, end = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             if (msg.isMine) {
                 Text(
                     text = if (msg.status == MessageStatus.READ) "Прочитано" else "Отправлено",
@@ -317,6 +381,7 @@ private fun EditMessageDialog(
     onSave: (String) -> Unit
 ) {
     var value by remember(initialText) { mutableStateOf(initialText) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Изменить сообщение") },
@@ -329,12 +394,18 @@ private fun EditMessageDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onSave(value) }, enabled = !loading) {
+            TextButton(
+                onClick = { onSave(value) },
+                enabled = !loading
+            ) {
                 Text("Сохранить")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !loading) {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !loading
+            ) {
                 Text("Отмена")
             }
         }

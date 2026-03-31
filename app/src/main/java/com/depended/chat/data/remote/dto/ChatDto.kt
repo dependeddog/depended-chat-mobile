@@ -6,7 +6,14 @@ import kotlinx.serialization.Serializable
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class CompanionDto(val id: String, val username: String)
+data class CompanionDto(
+    val id: String,
+    val username: String,
+    val bio: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("has_avatar") val hasAvatar: Boolean = false,
+    @SerialName("last_seen_at") val lastSeenAt: String? = null
+)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
