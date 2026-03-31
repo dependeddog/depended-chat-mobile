@@ -19,10 +19,10 @@ interface AuthRepository {
 interface ProfileRepository {
     suspend fun getMyProfile(forceRefresh: Boolean = false): UserProfile
     suspend fun getUserProfile(userId: String): UserProfile
+    suspend fun getUserLastSeen(userId: String): String?
     suspend fun updateBio(bio: String?): UserProfile
     suspend fun uploadAvatar(bytes: ByteArray, mimeType: String): UserProfile
     suspend fun deleteAvatar(): UserProfile
-    suspend fun touchLastSeen()
 }
 
 interface ChatsRepository {

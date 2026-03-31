@@ -84,7 +84,8 @@ fun ChatScreen(viewModel: ChatViewModel, chatId: String, onBack: () -> Unit, onO
                         UserAvatar(
                             username = state.companionName.ifBlank { "?" },
                             avatarUrl = state.companionAvatarUrl,
-                            avatarBase64 = state.companionAvatarBase64,
+                            userId = state.companionId,
+                            hasAvatar = state.companionHasAvatar,
                             size = 32.dp
                         )
                         Text(state.companionName.ifBlank { "Chat" }, modifier = Modifier.padding(start = 8.dp))

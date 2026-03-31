@@ -87,7 +87,8 @@ fun ChatsScreen(
                             UserAvatar(
                                 username = state.currentUser!!.username,
                                 avatarUrl = state.currentUser!!.avatarUrl,
-                                avatarBase64 = state.currentUser!!.avatarBase64,
+                                userId = state.currentUser!!.id,
+                                hasAvatar = state.currentUser!!.hasAvatar,
                                 size = 32.dp
                             )
                         } else {
@@ -158,7 +159,8 @@ private fun ChatListItem(item: com.depended.chat.domain.model.ChatItem, onClick:
         UserAvatar(
             username = item.companion.username,
             avatarUrl = item.companion.avatarUrl,
-            avatarBase64 = item.companion.avatarBase64,
+            userId = item.companion.id,
+            hasAvatar = item.companion.hasAvatar,
             size = 44.dp
         )
         Spacer(Modifier.width(12.dp))

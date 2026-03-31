@@ -71,8 +71,8 @@ class AuthRepositoryImpl @Inject constructor(
             username = dto.username,
             bio = dto.bio,
             avatarUrl = dto.avatarUrl,
-            avatarBase64 = dto.avatarBase64,
-            lastSeen = dto.lastSeen
+            hasAvatar = dto.hasAvatar,
+            lastSeenAt = dto.lastSeenAt
         ).also { currentUserFlow.value = it }
     }
 }

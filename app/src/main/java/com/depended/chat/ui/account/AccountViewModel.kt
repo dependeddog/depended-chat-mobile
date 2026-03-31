@@ -28,10 +28,7 @@ class AccountViewModel @Inject constructor(
 
     fun loadProfile() = viewModelScope.launch {
         _state.update { it.copy(loading = true, error = null, updateSuccess = null) }
-        runCatching {
-            profileRepository.touchLastSeen()
-            profileRepository.getMyProfile(forceRefresh = true)
-        }.onSuccess { profile ->
+        runCatching { profileRepository.getMyProfile(forceRefresh = true) }.onSuccess { profile ->
             _state.update {
                 it.copy(
                     loading = false,

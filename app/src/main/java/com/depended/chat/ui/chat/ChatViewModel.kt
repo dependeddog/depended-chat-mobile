@@ -49,7 +49,7 @@ class ChatViewModel @Inject constructor(
                         companionId = details.companion.id,
                         companionName = details.companion.username,
                         companionAvatarUrl = details.companion.avatarUrl,
-                        companionAvatarBase64 = details.companion.avatarBase64,
+                        companionHasAvatar = details.companion.hasAvatar,
                         messages = messages,
                         error = null
                     )
@@ -157,7 +157,7 @@ data class ChatUiState(
     val companionId: String = "",
     val companionName: String = "",
     val companionAvatarUrl: String? = null,
-    val companionAvatarBase64: String? = null,
+    val companionHasAvatar: Boolean = false,
     val input: String = "",
     val loading: Boolean = false,
     val error: String? = null,

@@ -6,7 +6,6 @@ import com.depended.chat.domain.model.ChatItem
 import com.depended.chat.domain.model.CurrentUser
 import com.depended.chat.domain.repository.AuthRepository
 import com.depended.chat.domain.repository.ChatsRepository
-import com.depended.chat.domain.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,8 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatsViewModel @Inject constructor(
     private val chatsRepository: ChatsRepository,
-    private val authRepository: AuthRepository,
-    private val profileRepository: ProfileRepository
+    private val authRepository: AuthRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChatsUiState())
     val state: StateFlow<ChatsUiState> = _state
@@ -28,7 +26,6 @@ class ChatsViewModel @Inject constructor(
 
     init {
         observeCurrentUser()
-        viewModelScope.launch { profileRepository.touchLastSeen() }
         loadChats()
     }
 

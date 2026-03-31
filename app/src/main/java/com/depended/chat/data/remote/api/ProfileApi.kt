@@ -1,15 +1,16 @@
 package com.depended.chat.data.remote.api
 
-import com.depended.chat.data.remote.dto.LastSeenTouchRequestDto
+import com.depended.chat.data.remote.dto.LastSeenReadDto
 import com.depended.chat.data.remote.dto.UpdateBioRequestDto
 import com.depended.chat.data.remote.dto.UserProfileDto
 import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.PATCH
-import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 
@@ -21,7 +22,7 @@ interface ProfileApi {
     suspend fun updateMyProfile(@Body body: UpdateBioRequestDto): UserProfileDto
 
     @Multipart
-    @POST("users/me/avatar")
+    @PUT("users/me/avatar")
     suspend fun uploadMyAvatar(@Part avatar: MultipartBody.Part): UserProfileDto
 
     @DELETE("users/me/avatar")
@@ -30,6 +31,9 @@ interface ProfileApi {
     @GET("users/{userId}/profile")
     suspend fun getUserProfile(@Path("userId") userId: String): UserProfileDto
 
-    @POST("users/me/last-seen")
-    suspend fun touchLastSeen(@Body body: LastSeenTouchRequestDto = LastSeenTouchRequestDto())
+    @GET("users/{userId}/last-seen")
+    suspend fun getUserLastSeen(@Path("userId") userId: String): LastSeenReadDto
+
+    @GET("users/{userId}/avatar")
+    suspend fun getUserAvatar(@Path("userId") userId: String): ResponseBody
 }

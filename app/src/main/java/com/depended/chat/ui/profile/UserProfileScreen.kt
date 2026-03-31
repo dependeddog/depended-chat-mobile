@@ -57,13 +57,13 @@ fun UserProfileScreen(viewModel: UserProfileViewModel, userId: String, onBack: (
                     UserAvatar(
                         username = profile.username,
                         avatarUrl = profile.avatarUrl,
-                        avatarBase64 = profile.avatarBase64,
+                        userId = profile.id,
+                        hasAvatar = profile.hasAvatar,
                         size = 92.dp
                     )
                     Text("Username: ${profile.username}")
-                    Text("Bio: ${profile.bio ?: "—"}")
-                    Text("Last seen: ${profile.lastSeen ?: "—"}")
-                    Text("User ID: ${profile.id}")
+                    Text("Bio: ${profile.bio?.takeIf { it.isNotBlank() } ?: "Описание не указано"}")
+                    Text("Last seen: ${profile.lastSeenAt ?: "—"}")
                 }
             }
         }

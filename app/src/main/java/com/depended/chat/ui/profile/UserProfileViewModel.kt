@@ -22,8 +22,9 @@ class UserProfileViewModel @Inject constructor(
         if (_state.value.userId == userId && _state.value.profile != null) return@launch
         _state.update { it.copy(loading = true, error = null, userId = userId) }
         runCatching {
-            profileRepository.touchLastSeen()
-            profileRepository.getUserProfile(userId)
+            val profile = profileRepository.getUserProfile(userId)
+            val lastSeen = profileRepository.getUserLastSeen(userId)
+            profile.copy(lastSeenAt = lastSeen ?: profile.lastSeenAt)
         }.onSuccess { profile ->
             _state.update { it.copy(loading = false, profile = profile) }
         }.onFailure { err ->

@@ -46,9 +46,9 @@ class ChatsRepositoryImpl @Inject constructor(
                 id = dto.companion.id,
                 username = dto.companion.username,
                 avatarUrl = dto.companion.avatarUrl,
-                avatarBase64 = dto.companion.avatarBase64,
+                hasAvatar = dto.companion.hasAvatar,
                 bio = dto.companion.bio,
-                lastSeen = dto.companion.lastSeen
+                lastSeenAt = dto.companion.lastSeenAt
             ),
             unreadCount = dto.unreadCount
         )
@@ -74,9 +74,9 @@ class ChatsRepositoryImpl @Inject constructor(
             val companionId = companionElement.jsonObject["id"]?.toString()?.trim('"').orEmpty()
             val companionUsername = companionElement.jsonObject["username"]?.toString()?.trim('"').orEmpty()
             val companionAvatarUrl = companionElement.jsonObject["avatar_url"]?.toString()?.trim('"')
-            val companionAvatarBase64 = companionElement.jsonObject["avatar_base64"]?.toString()?.trim('"')
+            val companionHasAvatar = companionElement.jsonObject["has_avatar"]?.toString()?.toBooleanStrictOrNull() ?: false
             val companionBio = companionElement.jsonObject["bio"]?.toString()?.trim('"')
-            val companionLastSeen = companionElement.jsonObject["last_seen"]?.toString()?.trim('"')
+            val companionLastSeen = companionElement.jsonObject["last_seen_at"]?.toString()?.trim('"')
 
             val lastMessageElement = ev.data["last_message"]
             val lastMessage = if (lastMessageElement == null || lastMessageElement is JsonNull) {
@@ -96,9 +96,9 @@ class ChatsRepositoryImpl @Inject constructor(
                     id = companionId,
                     username = companionUsername,
                     avatarUrl = companionAvatarUrl,
-                    avatarBase64 = companionAvatarBase64,
+                    hasAvatar = companionHasAvatar,
                     bio = companionBio,
-                    lastSeen = companionLastSeen
+                    lastSeenAt = companionLastSeen
                 ),
                 lastMessage = lastMessage,
                 unreadCount = unread,
@@ -164,9 +164,9 @@ class ChatsRepositoryImpl @Inject constructor(
             id = companion.id,
             username = companion.username,
             avatarUrl = companion.avatarUrl,
-            avatarBase64 = companion.avatarBase64,
+            hasAvatar = companion.hasAvatar,
             bio = companion.bio,
-            lastSeen = companion.lastSeen
+            lastSeenAt = companion.lastSeenAt
         ),
         lastMessage = lastMessage?.toDomain(),
         unreadCount = unreadCount,

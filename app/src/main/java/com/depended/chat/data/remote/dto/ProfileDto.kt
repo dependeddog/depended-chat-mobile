@@ -10,9 +10,10 @@ data class UserProfileDto(
     val id: String,
     val username: String,
     val bio: String? = null,
+    @SerialName("last_seen_at") val lastSeenAt: String? = null,
+    @SerialName("has_avatar") val hasAvatar: Boolean = false,
     @SerialName("avatar_url") val avatarUrl: String? = null,
-    @SerialName("avatar_base64") val avatarBase64: String? = null,
-    @SerialName("last_seen") val lastSeen: String? = null
+    @SerialName("avatar_mime_type") val avatarMimeType: String? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -21,6 +22,6 @@ data class UpdateBioRequestDto(val bio: String?)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class LastSeenTouchRequestDto(
-    @SerialName("last_seen") val lastSeen: String? = null
+data class LastSeenReadDto(
+    @SerialName("last_seen_at") val lastSeenAt: String? = null
 )

@@ -24,6 +24,8 @@ class ProfileRepositoryImpl @Inject constructor(
 
     override suspend fun getUserProfile(userId: String): UserProfile = api.getUserProfile(userId).toDomain()
 
+    override suspend fun getUserLastSeen(userId: String): String? = api.getUserLastSeen(userId).lastSeenAt
+
     override suspend fun updateBio(bio: String?): UserProfile =
         api.updateMyProfile(UpdateBioRequestDto(bio = bio)).toDomain().also { cachedMyProfile = it }
 
@@ -35,16 +37,13 @@ class ProfileRepositoryImpl @Inject constructor(
 
     override suspend fun deleteAvatar(): UserProfile = api.deleteMyAvatar().toDomain().also { cachedMyProfile = it }
 
-    override suspend fun touchLastSeen() {
-        runCatching { api.touchLastSeen() }
-    }
-
     private fun UserProfileDto.toDomain() = UserProfile(
         id = id,
         username = username,
         bio = bio,
         avatarUrl = avatarUrl,
-        avatarBase64 = avatarBase64,
-        lastSeen = lastSeen
+        hasAvatar = hasAvatar,
+        avatarMimeType = avatarMimeType,
+        lastSeenAt = lastSeenAt
     )
 }
