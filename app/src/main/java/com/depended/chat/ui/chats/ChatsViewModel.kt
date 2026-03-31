@@ -47,9 +47,16 @@ class ChatsViewModel @Inject constructor(
 
     fun loadChats() = viewModelScope.launch {
         _state.update { it.copy(loading = true, error = null) }
+
         runCatching { chatsRepository.getChats() }
             .onSuccess { items ->
-                _state.update { it.copy(loading = false, items = items, isEmpty = items.isEmpty()) }
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        items = items,
+                        isEmpty = items.isEmpty()
+                    )
+                }
 
                 val currentUserId = _state.value.currentUser?.id
                 if (!currentUserId.isNullOrBlank()) {
@@ -57,8 +64,11 @@ class ChatsViewModel @Inject constructor(
                 }
             }
             .onFailure { error ->
-                _state.update { state ->
-                    state.copy(loading = false, error = error.message ?: "Не удалось загрузить чаты")
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        error = error.message ?: "Не удалось загрузить чаты"
+                    )
                 }
             }
     }
@@ -129,10 +139,39 @@ class ChatsViewModel @Inject constructor(
                 _state.update { it.copy(creatingChat = false, createError = mapped) }
             }
     }
+
+    fun refreshChats() = viewModelScope.launch {
+        _state.update { it.copy(isRefreshing = true, error = null) }
+
+        runCatching { chatsRepository.getChats() }
+            .onSuccess { items ->
+                _state.update {
+                    it.copy(
+                        isRefreshing = false,
+                        items = items,
+                        isEmpty = items.isEmpty()
+                    )
+                }
+
+                val currentUserId = _state.value.currentUser?.id
+                if (!currentUserId.isNullOrBlank()) {
+                    observeGlobalEventsOnce(currentUserId)
+                }
+            }
+            .onFailure { error ->
+                _state.update {
+                    it.copy(
+                        isRefreshing = false,
+                        error = error.message ?: "Не удалось обновить чаты"
+                    )
+                }
+            }
+    }
 }
 
 data class ChatsUiState(
     val loading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val items: List<ChatItem> = emptyList(),
     val isEmpty: Boolean = false,
     val error: String? = null,
