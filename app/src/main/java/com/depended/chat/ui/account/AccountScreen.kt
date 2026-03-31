@@ -47,12 +47,21 @@ fun AccountScreen(viewModel: AccountViewModel, onBack: () -> Unit, onLoggedOut: 
     var bioDraft by remember(state.profile?.bio) { mutableStateOf(state.profile?.bio.orEmpty()) }
     var editBioDialogOpen by remember { mutableStateOf(false) }
 
-    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+    val imagePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
         if (uri != null) {
-            val bytes = context.readBytes(uri)
-            val mime = context.resolveImageMimeType(uri)
+            val bytes = context.readCompressedWebp(
+                uri = uri,
+                maxSidePx = 512,
+                quality = 80
+            )
+
             if (bytes != null) {
-                viewModel.uploadAvatar(bytes, mime)
+                viewModel.uploadAvatar(
+                    bytes = bytes,
+                    mimeType = "image/webp"
+                )
             }
         }
     }
