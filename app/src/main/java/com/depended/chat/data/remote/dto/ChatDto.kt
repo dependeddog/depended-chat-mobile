@@ -16,6 +16,8 @@ data class MessageDto(
     @SerialName("sender_id") val senderId: String,
     val text: String,
     @SerialName("created_at") val createdAt: String,
+    @SerialName("is_edited") val isEdited: Boolean = false,
+    @SerialName("edited_at") val editedAt: String? = null,
     @SerialName("is_own") val isOwn: Boolean,
     @SerialName("read_by_companion") val readByCompanion: Boolean
 )
@@ -60,6 +62,10 @@ data class ChatMessagesResponseDto(val items: List<MessageDto>, val limit: Int, 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class MessageCreateRequestDto(val text: String)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class MessageUpdateRequestDto(val text: String)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable

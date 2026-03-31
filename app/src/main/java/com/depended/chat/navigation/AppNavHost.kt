@@ -1,6 +1,7 @@
 package com.depended.chat.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -40,6 +41,17 @@ fun AppNavHost() {
         }
         composable(Route.Chats.path) {
             val vm = hiltViewModel<ChatsViewModel>()
+            LaunchedEffect(Unit) {
+                navController.currentBackStackEntry
+                    ?.savedStateHandle
+                    ?.getStateFlow("deleted_chat_id", "")
+                    ?.collect { deletedChatId ->
+                        if (deletedChatId.isNotBlank()) {
+                            vm.onChatDeleted(deletedChatId)
+                            navController.currentBackStackEntry?.savedStateHandle?.set("deleted_chat_id", "")
+                        }
+                    }
+            }
             ChatsScreen(
                 vm,
                 onOpenChat = { navController.navigate(Route.Chat.create(it)) },
@@ -61,7 +73,15 @@ fun AppNavHost() {
         composable(Route.Chat.path, arguments = listOf(navArgument("chatId") { type = NavType.StringType })) { backStack ->
             val chatId = backStack.arguments?.getString("chatId").orEmpty()
             val vm = hiltViewModel<ChatViewModel>()
-            ChatScreen(vm, chatId, onBack = { navController.popBackStack() })
+            ChatScreen(
+                viewModel = vm,
+                chatId = chatId,
+                onBack = { navController.popBackStack() },
+                onChatDeleted = {
+                    navController.previousBackStackEntry?.savedStateHandle?.set("deleted_chat_id", chatId)
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

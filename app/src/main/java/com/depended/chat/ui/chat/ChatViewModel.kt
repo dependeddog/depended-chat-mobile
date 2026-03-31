@@ -8,13 +8,16 @@ import com.depended.chat.domain.model.MessageStatus
 import com.depended.chat.domain.repository.ChatsRepository
 import com.depended.chat.domain.repository.MessageEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -22,6 +25,9 @@ class ChatViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChatUiState())
     val state: StateFlow<ChatUiState> = _state
+
+    private val _events = MutableSharedFlow<ChatUiEvent>()
+    val events: SharedFlow<ChatUiEvent> = _events.asSharedFlow()
 
     private var chatEventsJob: Job? = null
 
@@ -46,6 +52,7 @@ class ChatViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         loading = false,
+                        currentUserId = currentUserId,
                         companionName = details.companion.username,
                         messages = messages,
                         error = null
@@ -61,60 +68,62 @@ class ChatViewModel @Inject constructor(
     private fun observeSocket(chatId: String, currentUserId: String) {
         chatEventsJob?.cancel()
 
-        Log.d("WS_CHAT_VM", "[observeSocket.start] chatId=$chatId currentUserId=$currentUserId")
-
         chatEventsJob = viewModelScope.launch {
             chatsRepository.chatEvents(chatId, currentUserId).collect { event ->
-                Log.d("WS_CHAT_VM", "[collect] chatId=$chatId event=$event")
-
                 when (event) {
-                    is MessageEvent.Created -> {
-                        val incoming = event.message
-
-                        _state.update { current ->
-                            val existing = current.messages.indexOfFirst { it.id == incoming.id }
-
-                            if (existing >= 0) {
-                                val updated = current.messages.toMutableList()
-                                updated[existing] = incoming
-                                current.copy(messages = updated)
-                            } else {
-                                current.copy(messages = current.messages + incoming)
-                            }
-                        }
-
-                        if (!incoming.isMine) {
-                            runCatching {
-                                chatsRepository.markRead(chatId)
-                            }.onFailure {
-                                Log.e("WS_CHAT_VM", "[markRead.onIncoming.failed] chatId=$chatId", it)
-                            }
+                    is MessageEvent.Created -> upsertMessage(event.message)
+                    is MessageEvent.Updated -> upsertMessage(event.message)
+                    is MessageEvent.Deleted -> removeMessage(event.messageId)
+                    is MessageEvent.ChatDeleted -> {
+                        if (event.chatId == _state.value.chatId) {
+                            _events.emit(ChatUiEvent.ChatDeleted)
                         }
                     }
-
-                    is MessageEvent.ReadUpTo -> {
-                        val readUpToId = event.readUpToMessageId
-                        Log.d("WS_CHAT_VM", "[MessageEvent.ReadUpTo] chatId=$chatId readUpToId=$readUpToId")
-
-                        if (!readUpToId.isNullOrBlank()) {
-                            _state.update { current ->
-                                val index = current.messages.indexOfFirst { it.id == readUpToId }
-                                if (index < 0) return@update current
-
-                                val updated = current.messages.mapIndexed { i, msg ->
-                                    if (msg.isMine && i <= index) {
-                                        msg.copy(status = MessageStatus.READ)
-                                    } else {
-                                        msg
-                                    }
-                                }
-
-                                current.copy(messages = updated)
-                            }
-                        }
-                    }
+                    is MessageEvent.ReadUpTo -> applyReadStatus(event.readUpToMessageId)
                 }
             }
+        }
+    }
+
+    private fun upsertMessage(incoming: Message) {
+        _state.update { current ->
+            val existing = current.messages.indexOfFirst { it.id == incoming.id }
+            if (existing >= 0) {
+                val updated = current.messages.toMutableList()
+                updated[existing] = incoming
+                current.copy(messages = updated)
+            } else {
+                current.copy(messages = current.messages + incoming)
+            }
+        }
+
+        if (!incoming.isMine) {
+            viewModelScope.launch {
+                runCatching { chatsRepository.markRead(incoming.chatId) }
+                    .onFailure {
+                        Log.e("WS_CHAT_VM", "[markRead.onIncoming.failed] chatId=${incoming.chatId}", it)
+                    }
+            }
+        }
+    }
+
+    private fun removeMessage(messageId: String) {
+        _state.update { current ->
+            current.copy(messages = current.messages.filterNot { it.id == messageId })
+        }
+    }
+
+    private fun applyReadStatus(readUpToId: String?) {
+        if (readUpToId.isNullOrBlank()) return
+
+        _state.update { current ->
+            val index = current.messages.indexOfFirst { it.id == readUpToId }
+            if (index < 0) return@update current
+
+            val updated = current.messages.mapIndexed { i, msg ->
+                if (msg.isMine && i <= index) msg.copy(status = MessageStatus.READ) else msg
+            }
+            current.copy(messages = updated)
         }
     }
 
@@ -136,7 +145,55 @@ class ChatViewModel @Inject constructor(
             }
             .onFailure {
                 _state.update { it.copy(input = text) }
+                emitError("Не удалось отправить сообщение")
             }
+    }
+
+    fun updateMessage(messageId: String, originalText: String, newText: String) = viewModelScope.launch {
+        val chatId = _state.value.chatId
+        val trimmed = newText.trim()
+        if (chatId.isBlank()) return@launch
+        if (trimmed.isBlank()) {
+            emitError("Текст сообщения не должен быть пустым")
+            return@launch
+        }
+        if (trimmed == originalText) return@launch
+
+        _state.update { it.copy(editingInProgress = true) }
+        runCatching { chatsRepository.updateMessage(chatId, messageId, trimmed) }
+            .onSuccess { updated ->
+                upsertMessage(updated)
+            }
+            .onFailure { emitError(it.message ?: "Не удалось изменить сообщение") }
+        _state.update { it.copy(editingInProgress = false) }
+    }
+
+    fun deleteMessage(messageId: String) = viewModelScope.launch {
+        val chatId = _state.value.chatId
+        if (chatId.isBlank()) return@launch
+
+        _state.update { it.copy(deleteMessageInProgress = true) }
+        runCatching { chatsRepository.deleteMessage(chatId, messageId) }
+            .onSuccess { removeMessage(messageId) }
+            .onFailure { emitError(it.message ?: "Не удалось удалить сообщение") }
+        _state.update { it.copy(deleteMessageInProgress = false) }
+    }
+
+    fun deleteChat() = viewModelScope.launch {
+        val chatId = _state.value.chatId
+        if (chatId.isBlank()) return@launch
+
+        _state.update { it.copy(deleteChatInProgress = true) }
+        runCatching { chatsRepository.deleteChat(chatId) }
+            .onSuccess {
+                _events.emit(ChatUiEvent.ChatDeleted)
+            }
+            .onFailure { emitError(it.message ?: "Не удалось удалить чат") }
+        _state.update { it.copy(deleteChatInProgress = false) }
+    }
+
+    private fun emitError(message: String) {
+        viewModelScope.launch { _events.emit(ChatUiEvent.Error(message)) }
     }
 
     override fun onCleared() {
@@ -155,5 +212,13 @@ data class ChatUiState(
     val input: String = "",
     val loading: Boolean = false,
     val error: String? = null,
-    val messages: List<Message> = emptyList()
+    val messages: List<Message> = emptyList(),
+    val editingInProgress: Boolean = false,
+    val deleteMessageInProgress: Boolean = false,
+    val deleteChatInProgress: Boolean = false
 )
+
+sealed class ChatUiEvent {
+    data class Error(val message: String) : ChatUiEvent()
+    data object ChatDeleted : ChatUiEvent()
+}

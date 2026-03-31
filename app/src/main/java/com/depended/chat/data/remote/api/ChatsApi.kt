@@ -2,7 +2,9 @@ package com.depended.chat.data.remote.api
 
 import com.depended.chat.data.remote.dto.*
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -29,6 +31,22 @@ interface ChatsApi {
         @Path("chatId") chatId: String,
         @Body body: MessageCreateRequestDto
     ): MessageDto
+
+    @PATCH("chats/{chatId}/messages/{messageId}")
+    suspend fun updateMessage(
+        @Path("chatId") chatId: String,
+        @Path("messageId") messageId: String,
+        @Body body: MessageUpdateRequestDto
+    ): MessageDto
+
+    @DELETE("chats/{chatId}/messages/{messageId}")
+    suspend fun deleteMessage(
+        @Path("chatId") chatId: String,
+        @Path("messageId") messageId: String
+    )
+
+    @DELETE("chats/{chatId}")
+    suspend fun deleteChat(@Path("chatId") chatId: String)
 
     @POST("chats/{chatId}/read")
     suspend fun markRead(@Path("chatId") chatId: String): MarkReadResponseDto
