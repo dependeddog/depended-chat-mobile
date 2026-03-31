@@ -89,7 +89,8 @@ fun ChatsScreen(
                                 avatarUrl = state.currentUser!!.avatarUrl,
                                 userId = state.currentUser!!.id,
                                 hasAvatar = state.currentUser!!.hasAvatar,
-                                size = 32.dp
+                                size = 32.dp,
+                                avatarVersion = state.currentUser!!.avatarVersion
                             )
                         } else {
                             Icon(Icons.Default.AccountCircle, contentDescription = "Аккаунт")
@@ -161,7 +162,8 @@ private fun ChatListItem(item: com.depended.chat.domain.model.ChatItem, onClick:
             avatarUrl = item.companion.avatarUrl,
             userId = item.companion.id,
             hasAvatar = item.companion.hasAvatar,
-            size = 44.dp
+            size = 44.dp,
+            avatarVersion = item.companion.avatarVersion
         )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {

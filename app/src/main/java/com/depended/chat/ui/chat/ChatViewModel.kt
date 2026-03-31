@@ -50,6 +50,7 @@ class ChatViewModel @Inject constructor(
                         companionName = details.companion.username,
                         companionAvatarUrl = details.companion.avatarUrl,
                         companionHasAvatar = details.companion.hasAvatar,
+                        companionAvatarVersion = details.companion.avatarVersion,
                         messages = messages,
                         error = null
                     )
@@ -158,6 +159,7 @@ data class ChatUiState(
     val companionName: String = "",
     val companionAvatarUrl: String? = null,
     val companionHasAvatar: Boolean = false,
+    val companionAvatarVersion: Long? = null,
     val input: String = "",
     val loading: Boolean = false,
     val error: String? = null,

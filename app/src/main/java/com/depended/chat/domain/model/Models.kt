@@ -6,7 +6,8 @@ data class ChatUser(
     val avatarUrl: String? = null,
     val hasAvatar: Boolean = false,
     val bio: String? = null,
-    val lastSeenAt: String? = null
+    val lastSeenAt: String? = null,
+    val avatarVersion: Long? = null
 )
 
 enum class MessageStatus { SENT, READ }
@@ -41,7 +42,8 @@ data class CurrentUser(
     val bio: String? = null,
     val avatarUrl: String? = null,
     val hasAvatar: Boolean = false,
-    val lastSeenAt: String? = null
+    val lastSeenAt: String? = null,
+    val avatarVersion: Long? = null
 )
 
 data class UserProfile(
@@ -51,5 +53,6 @@ data class UserProfile(
     val avatarUrl: String? = null,
     val hasAvatar: Boolean = false,
     val avatarMimeType: String? = null,
-    val lastSeenAt: String? = null
+    val lastSeenAt: String? = null,
+    val avatarVersion: Long? = null,
 )

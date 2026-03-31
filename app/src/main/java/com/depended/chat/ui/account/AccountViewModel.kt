@@ -64,16 +64,78 @@ class AccountViewModel @Inject constructor(
 
     fun uploadAvatar(bytes: ByteArray, mimeType: String) = viewModelScope.launch {
         _state.update { it.copy(uploadingAvatar = true, error = null, updateSuccess = null) }
+
         runCatching { profileRepository.uploadAvatar(bytes, mimeType) }
-            .onSuccess { profile -> _state.update { it.copy(uploadingAvatar = false, profile = profile, updateSuccess = "Аватар обновлён") } }
-            .onFailure { err -> _state.update { it.copy(uploadingAvatar = false, error = err.message ?: "Не удалось загрузить аватар") } }
+            .onSuccess {
+                val now = System.currentTimeMillis()
+
+                _state.update { current ->
+                    val profile = current.profile
+                    if (profile == null) {
+                        current.copy(
+                            uploadingAvatar = false,
+                            updateSuccess = "Аватар обновлён"
+                        )
+                    } else {
+                        current.copy(
+                            uploadingAvatar = false,
+                            profile = profile.copy(
+                                hasAvatar = true,
+                                avatarUrl = "/users/${profile.id}/avatar",
+                                avatarMimeType = mimeType,
+                                avatarVersion = now
+                            ),
+                            updateSuccess = "Аватар обновлён"
+                        )
+                    }
+                }
+            }
+            .onFailure { err ->
+                _state.update {
+                    it.copy(
+                        uploadingAvatar = false,
+                        error = err.message ?: "Не удалось загрузить аватар"
+                    )
+                }
+            }
     }
 
     fun deleteAvatar() = viewModelScope.launch {
         _state.update { it.copy(uploadingAvatar = true, error = null, updateSuccess = null) }
+
         runCatching { profileRepository.deleteAvatar() }
-            .onSuccess { profile -> _state.update { it.copy(uploadingAvatar = false, profile = profile, updateSuccess = "Аватар удалён") } }
-            .onFailure { err -> _state.update { it.copy(uploadingAvatar = false, error = err.message ?: "Не удалось удалить аватар") } }
+            .onSuccess {
+                val now = System.currentTimeMillis()
+
+                _state.update { current ->
+                    val profile = current.profile
+                    if (profile == null) {
+                        current.copy(
+                            uploadingAvatar = false,
+                            updateSuccess = "Аватар удалён"
+                        )
+                    } else {
+                        current.copy(
+                            uploadingAvatar = false,
+                            profile = profile.copy(
+                                hasAvatar = false,
+                                avatarUrl = null,
+                                avatarMimeType = null,
+                                avatarVersion = now
+                            ),
+                            updateSuccess = "Аватар удалён"
+                        )
+                    }
+                }
+            }
+            .onFailure { err ->
+                _state.update {
+                    it.copy(
+                        uploadingAvatar = false,
+                        error = err.message ?: "Не удалось удалить аватар"
+                    )
+                }
+            }
     }
 
     fun logout(onDone: () -> Unit) = viewModelScope.launch {

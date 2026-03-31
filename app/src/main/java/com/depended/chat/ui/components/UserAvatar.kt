@@ -24,12 +24,19 @@ fun UserAvatar(
     userId: String?,
     hasAvatar: Boolean,
     size: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    avatarVersion: Long? = null
 ) {
-    val resolvedUrl = AvatarUrlResolver.resolve(avatarUrl = avatarUrl, userId = userId, hasAvatar = hasAvatar)
+    val resolvedUrl = AvatarUrlResolver.resolve(
+        avatarUrl = avatarUrl,
+        userId = userId,
+        hasAvatar = hasAvatar,
+        avatarVersion = avatarVersion
+    )
     val painter = rememberAsyncImagePainter(model = resolvedUrl)
-    val state by painter.state
+    val state = painter.state
     val showImage = resolvedUrl != null && state !is AsyncImagePainter.State.Error
+
 
     Box(
         modifier = modifier

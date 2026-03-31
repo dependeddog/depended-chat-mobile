@@ -59,7 +59,8 @@ fun UserProfileScreen(viewModel: UserProfileViewModel, userId: String, onBack: (
                         avatarUrl = profile.avatarUrl,
                         userId = profile.id,
                         hasAvatar = profile.hasAvatar,
-                        size = 92.dp
+                        size = 92.dp,
+                        avatarVersion = profile.avatarVersion
                     )
                     Text("Username: ${profile.username}")
                     Text("Bio: ${profile.bio?.takeIf { it.isNotBlank() } ?: "Описание не указано"}")

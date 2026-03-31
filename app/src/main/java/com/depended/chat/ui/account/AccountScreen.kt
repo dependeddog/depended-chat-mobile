@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.depended.chat.ui.components.UserAvatar
+import com.depended.chat.ui.components.readCompressedWebp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,12 +48,21 @@ fun AccountScreen(viewModel: AccountViewModel, onBack: () -> Unit, onLoggedOut: 
     var bioDraft by remember(state.profile?.bio) { mutableStateOf(state.profile?.bio.orEmpty()) }
     var editBioDialogOpen by remember { mutableStateOf(false) }
 
-    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+    val imagePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
         if (uri != null) {
-            val bytes = context.readBytes(uri)
-            val mime = context.resolveImageMimeType(uri)
+            val bytes = context.readCompressedWebp(
+                uri = uri,
+                maxSidePx = 512,
+                quality = 80
+            )
+
             if (bytes != null) {
-                viewModel.uploadAvatar(bytes, mime)
+                viewModel.uploadAvatar(
+                    bytes = bytes,
+                    mimeType = "image/webp"
+                )
             }
         }
     }
@@ -116,7 +126,8 @@ fun AccountScreen(viewModel: AccountViewModel, onBack: () -> Unit, onLoggedOut: 
                 avatarUrl = profile?.avatarUrl,
                 userId = profile?.id,
                 hasAvatar = profile?.hasAvatar == true,
-                size = 84.dp
+                size = 84.dp,
+                avatarVersion = profile?.avatarVersion
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

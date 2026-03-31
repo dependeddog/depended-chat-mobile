@@ -48,7 +48,8 @@ class ChatsRepositoryImpl @Inject constructor(
                 avatarUrl = dto.companion.avatarUrl,
                 hasAvatar = dto.companion.hasAvatar,
                 bio = dto.companion.bio,
-                lastSeenAt = dto.companion.lastSeenAt
+                lastSeenAt = dto.companion.lastSeenAt,
+                avatarVersion = null
             ),
             unreadCount = dto.unreadCount
         )
@@ -98,7 +99,8 @@ class ChatsRepositoryImpl @Inject constructor(
                     avatarUrl = companionAvatarUrl,
                     hasAvatar = companionHasAvatar,
                     bio = companionBio,
-                    lastSeenAt = companionLastSeen
+                    lastSeenAt = companionLastSeen,
+                    avatarVersion = null
                 ),
                 lastMessage = lastMessage,
                 unreadCount = unread,
@@ -166,7 +168,8 @@ class ChatsRepositoryImpl @Inject constructor(
             avatarUrl = companion.avatarUrl,
             hasAvatar = companion.hasAvatar,
             bio = companion.bio,
-            lastSeenAt = companion.lastSeenAt
+            lastSeenAt = companion.lastSeenAt,
+            avatarVersion = null
         ),
         lastMessage = lastMessage?.toDomain(),
         unreadCount = unreadCount,
