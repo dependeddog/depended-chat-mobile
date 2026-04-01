@@ -52,28 +52,9 @@ app/src/main/java/com/depended/chat
 
 По умолчанию стоит `10.0.2.2` (эмулятор Android -> localhost хоста).
 
-## 4) Персистентная сессия без лишнего logout
-
-- При старте `SplashViewModel` вызывает `AuthRepository.refreshIfNeeded()`.
-- Если access токен ещё жив или успешно обновился по refresh — переход на список чатов.
-- На логин возвращаемся **только** если нет валидной сессии или refresh реально отклонён.
-
-## 5) Статусы сообщений
-
-- `SENT` — после успешного POST `/chats/{chat_id}/messages`.
-- `DELIVERED` — при подтверждении через общий поток сообщений (включая websocket-эхо с тем же message id).
-- `READ` — архитектура готова, базовая логика read связана с `POST /chats/{chat_id}/read`; можно усилить по `chat.read` event при расширении контракта в UI.
-
-## 6) Запуск
+## 4) Запуск
 
 1. Открыть проект в Android Studio (Giraffe+/Koala+).
 2. Sync Gradle.
 3. Убедиться, что backend запущен и доступен по URL из BuildConfig.
 4. Запустить `app` на эмуляторе/устройстве.
-
-## 7) Рекомендованные улучшения backend для ещё лучшего mobile UX
-
-- Явный контракт typing start/stop (включая формат исходящих клиентских команд).
-- Endpoint `/auth/me` для надёжного определения `my_user_id` и идеального выравнивания bubble/статусов.
-- Явный `delivered_at`/`read_at` на уровне message entity.
-- Cursor pagination для сообщений (lazy loading истории).
