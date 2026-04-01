@@ -3,7 +3,9 @@ package com.depended.chat.data.repository
 import com.depended.chat.data.auth.SessionManager
 import com.depended.chat.data.remote.api.AuthApi
 import com.depended.chat.data.remote.dto.AuthRequestDto
+import com.depended.chat.notifications.PushTokenSyncCoordinator
 import com.depended.chat.domain.model.CurrentUser
+import com.depended.chat.domain.model.UserProfile
 import com.depended.chat.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +14,8 @@ import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
     private val api: AuthApi,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val pushTokenSyncCoordinator: PushTokenSyncCoordinator
 ) : AuthRepository {
     private val currentUserFlow = MutableStateFlow<CurrentUser?>(null)
 
@@ -33,6 +36,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout() {
+        pushTokenSyncCoordinator.deleteOnLogout()
         runCatching { api.logout() }
         currentUserFlow.value = null
         sessionManager.clearSession()
@@ -62,10 +66,42 @@ class AuthRepositoryImpl @Inject constructor(
 
     override fun observeCurrentUser(): Flow<CurrentUser?> = currentUserFlow
 
+    override fun updateCurrentUserFromProfile(profile: UserProfile) {
+        val current = currentUserFlow.value
+        currentUserFlow.value = if (current != null && current.id == profile.id) {
+            current.copy(
+                username = profile.username,
+                bio = profile.bio,
+                avatarUrl = profile.avatarUrl,
+                hasAvatar = profile.hasAvatar,
+                lastSeenAt = profile.lastSeenAt,
+                avatarVersion = profile.avatarVersion
+            )
+        } else {
+            CurrentUser(
+                id = profile.id,
+                username = profile.username,
+                bio = profile.bio,
+                avatarUrl = profile.avatarUrl,
+                hasAvatar = profile.hasAvatar,
+                lastSeenAt = profile.lastSeenAt,
+                avatarVersion = profile.avatarVersion
+            )
+        }
+    }
+
     private suspend fun fetchAndCacheCurrentUser(): CurrentUser {
         val token = sessionManager.getSession().accessToken
         check(token.isNotBlank()) { "Not authorized" }
         val dto = api.whoami("Bearer $token")
-        return CurrentUser(id = dto.id, username = dto.username).also { currentUserFlow.value = it }
+        return CurrentUser(
+            id = dto.id,
+            username = dto.username,
+            bio = dto.bio,
+            avatarUrl = dto.avatarUrl,
+            hasAvatar = dto.hasAvatar,
+            lastSeenAt = dto.lastSeenAt,
+            avatarVersion = currentUserFlow.value?.avatarVersion
+        ).also { currentUserFlow.value = it }
     }
 }
