@@ -5,6 +5,7 @@ import com.depended.chat.data.auth.AuthInterceptor
 import com.depended.chat.data.auth.TokenAuthenticator
 import com.depended.chat.data.remote.api.AuthApi
 import com.depended.chat.data.remote.api.ChatsApi
+import com.depended.chat.data.remote.api.DevicesApi
 import com.depended.chat.data.remote.api.ProfileApi
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -72,5 +73,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideProfileApi(retrofit: Retrofit): ProfileApi = retrofit.create(ProfileApi::class.java)
-}
 
+    @Provides
+    @Singleton
+    fun provideDevicesApi(retrofit: Retrofit): DevicesApi = retrofit.create(DevicesApi::class.java)
+}

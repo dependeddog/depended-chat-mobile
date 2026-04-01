@@ -20,10 +20,32 @@ import com.depended.chat.ui.profile.UserProfileScreen
 import com.depended.chat.ui.profile.UserProfileViewModel
 import com.depended.chat.ui.splash.SplashScreen
 import com.depended.chat.ui.splash.SplashViewModel
+import kotlinx.coroutines.flow.collect
 
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
+    val navigationState = hiltViewModel<AppNavHostViewModel>().navigationState
+
+    LaunchedEffect(Unit) {
+        navigationState.openChatEvents.collect { chatId ->
+            navController.navigate(Route.Chats.path) {
+                popUpTo(Route.Auth.path) { inclusive = false }
+            }
+            navController.navigate(Route.Chat.create(chatId))
+        }
+    }
+
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collect { entry ->
+            val chatId = if (entry.destination.route == Route.Chat.path) {
+                entry.arguments?.getString("chatId")
+            } else {
+                null
+            }
+            navigationState.setCurrentChat(chatId)
+        }
+    }
 
     NavHost(navController = navController, startDestination = Route.Splash.path) {
         composable(Route.Splash.path) {
