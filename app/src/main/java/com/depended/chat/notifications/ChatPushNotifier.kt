@@ -36,7 +36,11 @@ class ChatPushNotifier @Inject constructor(
         manager.createNotificationChannel(channel)
     }
 
-    fun showMessageNotification(chatId: String, type: String, messageId: String?, senderId: String?) {
+    fun showMessageNotification(
+        chatId: String,
+        title: String,
+        body: String
+    ) {
         val intent = Intent(context, MainActivity::class.java).apply {
             action = ACTION_OPEN_CHAT_FROM_PUSH
             putExtra(EXTRA_CHAT_ID, chatId)
@@ -52,14 +56,18 @@ class ChatPushNotifier @Inject constructor(
 
         val notification = NotificationCompat.Builder(context, CHANNEL_CHAT_MESSAGES)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("New message")
-            .setContentText("type=$type sender=$senderId message=$messageId")
+            .setContentTitle(title.ifBlank { "New message" })
+            .setContentText(body.ifBlank { "Новое сообщение" })
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
         ) {
             return
         }

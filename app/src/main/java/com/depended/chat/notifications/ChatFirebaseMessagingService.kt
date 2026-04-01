@@ -34,11 +34,17 @@ class ChatFirebaseMessagingService : FirebaseMessagingService() {
 
         val type = message.data["type"].orEmpty()
         val chatId = message.data["chat_id"].orEmpty()
-        val messageId = message.data["message_id"]
-        val senderId = message.data["sender_id"]
+
+        val title = message.notification?.title.orEmpty()
+        val body = message.notification?.body.orEmpty()
 
         if (chatId.isBlank()) {
             Log.w(TAG, "[onMessageReceived] Missing chat_id in payload")
+            return
+        }
+
+        if (type != "new_message") {
+            Log.d(TAG, "[onMessageReceived] Unsupported type=$type")
             return
         }
 
@@ -50,9 +56,8 @@ class ChatFirebaseMessagingService : FirebaseMessagingService() {
 
         notifier.showMessageNotification(
             chatId = chatId,
-            type = type,
-            messageId = messageId,
-            senderId = senderId
+            title = title,
+            body = body
         )
     }
 

@@ -58,12 +58,17 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent() {
-        val chatId = intent?.takeIf { it.action == ChatPushNotifier.ACTION_OPEN_CHAT_FROM_PUSH }
+        val actionChatId = intent?.takeIf { it.action == ChatPushNotifier.ACTION_OPEN_CHAT_FROM_PUSH }
             ?.getStringExtra(ChatPushNotifier.EXTRA_CHAT_ID)
-            .orEmpty()
-        if (chatId.isNotBlank()) {
+
+        val launcherChatId = intent?.extras?.getString("chat_id")
+
+        val chatId = actionChatId ?: launcherChatId
+
+        if (!chatId.isNullOrBlank()) {
             navigationState.emitOpenChat(chatId)
             intent?.action = null
+            intent?.removeExtra("chat_id")
         }
     }
 }
